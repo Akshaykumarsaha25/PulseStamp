@@ -33,6 +33,7 @@ import com.instabeats.app.ui.screens.AboutScreen
 import com.instabeats.app.ui.screens.AccessDeniedScreen
 import com.instabeats.app.ui.screens.ExportOverlay
 import com.instabeats.app.ui.screens.ExportsScreen
+import com.instabeats.app.ui.screens.FaqScreen
 import com.instabeats.app.ui.screens.GuideScreen
 import com.instabeats.app.ui.screens.HealthConnectMissingScreen
 import com.instabeats.app.ui.screens.HomeScreen
@@ -144,6 +145,14 @@ private fun MainNav(vm: AppViewModel, state: AppState, reduceMotion: Boolean) {
                             onGuide = { nav.navigate("guide") },
                             onPrivacy = { nav.navigate("privacy") },
                             onGoWorkouts = { tab = Tab.WORKOUTS },
+                        )
+                        Tab.FAQ -> FaqScreen(
+                            state,
+                            samsungHealthInstalled = vm.health.samsungHealthIntent() != null,
+                            onCheckAgain = vm::loadWorkouts,
+                            onOpenSamsungHealth = { context.launch(vm.health.samsungHealthIntent()) },
+                            onOpenHealthConnect = { context.launch(vm.health.settingsIntent()) },
+                            bottomSpace = TabBarSpace,
                         )
                         Tab.ABOUT -> AboutScreen(onPrivacy = { nav.navigate("privacy") }, bottomSpace = TabBarSpace)
                     }

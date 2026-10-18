@@ -14,7 +14,7 @@ import androidx.compose.ui.unit.dp
 import com.instabeats.app.ui.theme.Studio
 import com.instabeats.app.ui.theme.body
 
-enum class Tab(val label: String) { HOME("Home"), WORKOUTS("Workouts"), EXPORTS("Exports"), ABOUT("About") }
+enum class Tab(val label: String) { HOME("Home"), WORKOUTS("Workouts"), EXPORTS("Exports"), FAQ("FAQ"), ABOUT("About") }
 
 @Composable
 fun GlassTabBar(current: Tab, onSelect: (Tab) -> Unit, modifier: Modifier = Modifier) {

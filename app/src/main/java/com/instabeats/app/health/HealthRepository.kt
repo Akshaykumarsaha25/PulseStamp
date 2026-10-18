@@ -129,12 +129,17 @@ class HealthRepository(private val context: Context) {
 
     fun settingsIntent(): Intent = Intent(HealthConnectClient.ACTION_HEALTH_CONNECT_SETTINGS)
 
+    /** Opening Samsung Health makes the watch sync, which pushes new workouts into Health Connect. */
+    fun samsungHealthIntent(): Intent? = context.packageManager.getLaunchIntentForPackage(SAMSUNG_HEALTH)
+
     fun playStoreIntent(): Intent = Intent(
         Intent.ACTION_VIEW,
         Uri.parse("market://details?id=com.google.android.apps.healthdata"),
     ).setPackage("com.android.vending")
 
     companion object {
+        private const val SAMSUNG_HEALTH = "com.sec.android.app.shealth"
+
         fun sportOf(type: Int): Sport = when (type) {
             ExerciseSessionRecord.EXERCISE_TYPE_BIKING -> Sport.CYCLING
             ExerciseSessionRecord.EXERCISE_TYPE_BIKING_STATIONARY -> Sport.INDOOR_CYCLING

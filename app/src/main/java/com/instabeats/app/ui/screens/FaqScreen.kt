@@ -1,0 +1,156 @@
+package com.instabeats.app.ui.screens
+
+import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import com.instabeats.app.ui.AppState
+import com.instabeats.app.ui.components.GhostButton
+import com.instabeats.app.ui.madeLabel
+import com.instabeats.app.ui.theme.Studio
+import com.instabeats.app.ui.theme.body
+import com.instabeats.app.ui.theme.display
+import java.time.Duration
+import java.time.Instant
+
+private class Faq(val question: String, val steps: List<String>, val note: String? = null)
+
+private val FAQS = listOf(
+    Faq(
+        "My latest workouts don't show",
+        listOf(
+            "Open Samsung Health so your watch syncs to the phone.",
+            "Open Settings › Health Connect › App permissions › Samsung Health. Turn Allow all off, then on again.",
+            "In Samsung Health, open Settings › Privacy and turn on \"Consent to the processing of health and wellness data\".",
+            "Open Health Connect › Data and access › Exercise to check the workout is there. If it is, tap Check again above.",
+        ),
+        "Workouts recorded while sync was broken may not come back. New workouts sync again once the steps above are done.",
+    ),
+    Faq(
+        "A workout shows but has no GPS",
+        listOf(
+            "Check the workout was recorded with GPS on the watch or phone.",
+            "When InstaBeats asks to read the route, tap Allow. If you refused it, export again and allow it this time.",
+            "If there's no route, you can still export heart rate only. Insta360 gets a still track with your heart rate.",
+        ),
+    ),
+    Faq(
+        "Insta360 doesn't show my heart rate",
+        listOf(
+            "In the Insta360 app, open your clip and tap Dashboard › Data source › Local files. Pick your InstaBeats file.",
+            "Make sure the clip was filmed during the workout. The file only covers the workout's start and end time.",
+            "Check the camera's clock is right. A wrong clock puts the clip outside the workout.",
+        ),
+    ),
+    Faq(
+        "Where are my files?",
+        listOf(
+            "Every export is saved in Download › InstaBeats on your phone.",
+            "The Exports tab lists them. You can share or delete them from there.",
+        ),
+    ),
+)
+
+@Composable
+fun FaqScreen(
+    state: AppState,
+    samsungHealthInstalled: Boolean,
+    onCheckAgain: () -> Unit,
+    onOpenSamsungHealth: () -> Unit,
+    onOpenHealthConnect: () -> Unit,
+    bottomSpace: Dp,
+) {
+    var open by rememberSaveable { mutableStateOf(0) }
+
+    Column(Modifier.fillMaxSize().background(Studio.Black).verticalScroll(rememberScrollState())) {
+        ScreenHeader("FAQ")
+        Column(
+            Modifier.padding(horizontal = 14.dp).padding(top = 16.dp).navigationBarsPadding().padding(bottom = bottomSpace + 12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            SyncCheck(state, samsungHealthInstalled, onCheckAgain, onOpenSamsungHealth, onOpenHealthConnect)
+            FAQS.forEachIndexed { i, faq ->
+                FaqItem(faq, expanded = open == i, onToggle = { open = if (open == i) -1 else i })
+            }
+        }
+    }
+}
+
+/** Shows the newest workout Health Connect gave us, so a stalled sync is easy to spot. */
+@Composable
+private fun SyncCheck(
+    state: AppState,
+    samsungHealthInstalled: Boolean,
+    onCheckAgain: () -> Unit,
+    onOpenSamsungHealth: () -> Unit,
+    onOpenHealthConnect: () -> Unit,
+) {
+    val newest = state.workouts.maxByOrNull { it.end }
+    val stale = newest == null || Duration.between(newest.end, Instant.now()) > Duration.ofDays(3)
+    ListCard {
+        Text("Is your watch syncing?", style = display(15))
+        Spacer(Modifier.height(6.dp))
+        val line = when {
+            state.loading -> "Checking Health Connect…"
+            newest == null -> "No workouts in Health Connect in the last ${state.rangeDays} days."
+            else -> "Newest workout in Health Connect: ${newest.name}, ${madeLabel(newest.end.toEpochMilli())}."
+        }
+        Text(line, style = body(13f, color = if (stale && !state.loading) Studio.Coral else Studio.Text))
+        if (stale && !state.loading) {
+            Text(
+                "Did you work out after that? Then sync has stopped. Follow the first answer below.",
+                style = body(12f, color = Studio.Mu),
+                modifier = Modifier.padding(top = 4.dp),
+            )
+        }
+        Spacer(Modifier.height(12.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            GhostButton("Check again", onClick = onCheckAgain)
+            if (samsungHealthInstalled) GhostButton("Samsung Health", onClick = onOpenSamsungHealth)
+            GhostButton("Health Connect", onClick = onOpenHealthConnect)
+        }
+    }
+}
+
+@Composable
+private fun FaqItem(faq: Faq, expanded: Boolean, onToggle: () -> Unit) {
+    ListCard(Modifier.animateContentSize(), onClick = onToggle) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(faq.question, style = body(14f, FontWeight.ExtraBold), modifier = Modifier.weight(1f))
+            Text(if (expanded) "–" else "+", style = display(16).copy(color = Studio.Yellow))
+        }
+        if (expanded) {
+            Spacer(Modifier.height(10.dp))
+            faq.steps.forEachIndexed { i, step ->
+                Row(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                    Text("${i + 1}", style = body(13f, FontWeight.ExtraBold, Studio.Yellow), modifier = Modifier.padding(end = 10.dp))
+                    Text(step, style = body(13f, color = Color(0xE0F5F5F2)))
+                }
+            }
+            faq.note?.let {
+                Text(it, style = body(12f, color = Studio.Mu), modifier = Modifier.padding(top = 8.dp))
+            }
+        }
+    }
+}

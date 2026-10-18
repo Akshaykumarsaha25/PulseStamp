@@ -41,6 +41,10 @@ Fourth tab in the glass tab bar, same Studio look: the founder story, then credi
 - Credits: "Made by Akshay Kumar Saha", "Built with help from Claude by Anthropic", app version from the installed package's `versionName`.
 - "View on GitHub" (yellow action) opens https://github.com/akshaykumarsaha25-maker/InstaBeats in the browser with an `ACTION_VIEW` intent. The app itself still has no INTERNET permission; if no browser is installed, the button shows "No browser found" instead of crashing.
 
+### FAQ tab (requested 2026-10-18)
+
+A tab between Exports and About. At the top, a sync check shows the newest workout Health Connect returned (coral when it is more than 3 days old or missing), with Check again, Samsung Health (when installed) and Health Connect buttons. Below are expandable answers: latest workouts don't show (the Samsung Health 7.00.6 sync fix: open Samsung Health, toggle its Health Connect permissions off and on, turn on its privacy consent, check Health Connect's Exercise data; workouts from the broken window may not come back), no GPS on a workout, Insta360 shows no heart rate, and where the files are.
+
 ## 1. Structure (approved)
 
 ```
