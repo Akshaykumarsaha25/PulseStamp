@@ -15,6 +15,22 @@ android {
         versionName = "2.0"
     }
 
+    // One fixed debug key for every CI build, so a new APK installs over the last one.
+    // Each GitHub runner otherwise makes a fresh key and Android refuses the update.
+    signingConfigs {
+        getByName("debug") {
+            storeFile = file("debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+    buildTypes {
+        getByName("debug") {
+            signingConfig = signingConfigs.getByName("debug")
+        }
+    }
+
     buildFeatures {
         compose = true
     }
