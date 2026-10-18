@@ -1,32 +1,32 @@
 # InstaBeats UI redesign: design spec
 
-Status: draft for review. Sections marked *approved* were agreed during brainstorming; sections 2 to 4 are new and need review.
+Status: sections 1 and 2 approved; section 3 presented with one open decision; section 4 proposed below and needs approval.
 
 ## Goal
 
-Replace the single-screen prototype (`MainActivity.kt`, 438 lines) with a small, structured app that looks finished and produces correct GPX files for the Insta360 overlay: real heart rate only, real route when there is one, correct sport type, and nothing dropped on long workouts.
+Redesign InstaBeats into a polished, Gen Z, Insta360-style app (AI action hero slideshow, frosted glass, Studio palette) with a full flow (Welcome → Home / Workouts / Exports → Workout detail → Export → Insta360 guide), a hard on-device privacy guarantee (no internet permission), and a restructured, unit-tested codebase, shipped through the existing GitHub Actions APK build. The GPX it writes must stay accurate (real HR, real GPS where there is one) and keep loading in Insta360 (Dashboard → Data source → Local files).
 
-## Approved decisions (summary)
+## Approved decisions
 
 - **Visual direction "Studio":** true black, yellow `#FFC93C` for actions only, coral `#FF6B5E` for heart rate only, Unbounded 900 wordmark, Manrope body, frosted glass panels (blur on Android 12+, tinted fallback on 9 to 11).
-- **Home layout A:** full-bleed hero slideshow, stacked "Insta / Beats" wordmark, tagline "Stamp your beats on every frame.", glass card with the latest workout (BPM pulsing at the real rate, lap bars with the best lap in yellow, "Export for Insta360"), glass tab bar.
-- **Hero slideshow:** fade only (about 4 s hold, 2.2 s crossfade, one slow drift/zoom per photo, no blur, no progress bars). Per-image scrim strength from measured brightness.
-- **Privacy:** "Your heart rate stays on your phone." No INTERNET permission (`tools:node="remove"`), no account, cloud, sync or analytics, `allowBackup="false"`, files only in `Downloads/InstaBeats`.
+- **Home layout A:** full-bleed hero, stacked "Insta / Beats" wordmark, tagline "Stamp your beats on every frame.", glass card with the latest workout (BPM pulsing at the real rate, lap bars with the best lap in yellow, "Export for Insta360"), glass tab bar.
+- **Hero slideshow:** fade only (about 4 s hold, 2.2 s crossfade, one continuous gentle drift/zoom per photo, no blur filters, no progress bars).
+- **Privacy on Welcome:** "Your heart rate stays on your phone." No INTERNET permission (`tools:node="remove"`), no account, cloud, sync or analytics, `allowBackup="false"`, files only in `Downloads/InstaBeats`.
 - **Screen flow:** Welcome (first run) → Health Connect permission → Home. Tabs Home / Workouts (filters All, With GPS, HR only; 7, 14, 30 days) / Exports (share, delete, How to use, Privacy). Workout detail → export (route consent if needed) → "Export done" sheet (Open Insta360 / Share / How to load it) → Insta360 guide. File names `InstaBeats_<Sport>_<yyyy-MM-dd>.gpx`. HR zones shaded relative to the workout's peak.
 
-### Hero images (picked on the full-HD comparison page)
+### Hero images
 
-Shipped as WebP in `res/drawable-nodpi` at 1080×1920, in this order:
+Five AI images (FLUX.1-schnell, Apache 2.0, generated locally), 1080×1920, shipped as WebP in `res/drawable-nodpi`, in slideshow order:
 
-| # | Scene | Source |
-|---|---|---|
-| 1 | Mountain biker mid-air | new full-HD render `hd_mtb_air_1000` |
-| 2 | Drift night | original `ai_drift_night_1000`, AI-upscaled to 1080×1920 |
-| 3 | Supermoto | new full-HD render `hd_supermoto_1001` |
-| 4 | Tiny-planet circuit | original `ai_planet_circuit_1000`, AI-upscaled to 1080×1920 |
-| 5 | Helmet-cam night ride | new full-HD render `hd_helmet_pov_1001` |
+| # | Scene | File | Source | Mean luma (title / card zone) |
+|---|---|---|---|---|
+| 1 | Mountain biker mid-air | `hd_mtb_air_1000` | re-rendered at 1088×1920, cropped | 78 / 33 |
+| 2 | Drift night, pink smoke | `up_drift_night_1000` | 768×1344 original, Real-ESRGAN x4 | 89 / 40 |
+| 3 | Supermoto (night) | `hd_supermoto_1001` | re-rendered | 75 / 94 |
+| 4 | Tiny-planet circuit | `up_planet_circuit_1000` | original, upscaled | 131 / 56 |
+| 5 | Helmet-cam night ride | `hd_helmet_pov_1001` | re-rendered | 17 / 72 |
 
-Before shipping, each is checked at 100% for AI artefacts (wheels, spokes, fake text).
+Scrim per image: top alpha = clamp(1 − 60 / titleLuma, 0.40, 0.78); card glass alpha = clamp(1 − 60 / cardLuma, 0.38, 0.70). Before shipping: soften the fake sponsor lettering on the drift car, check `hd_supermoto_1001` for fake text, and check every image at 100% for AI artefacts.
 
 ## 1. Structure (approved)
 
@@ -45,105 +45,47 @@ app/src/main/java/com/instabeats/app/
 ```
 
 - UI never touches Health Connect or files; only the ViewModel calls the repository and the store.
-- New deps (Kotlin 1.9.24 / Compose BOM 2024.06, no Kotlin 2.0 upgrade): `androidx.navigation:navigation-compose:2.7.7`, `androidx.lifecycle:lifecycle-viewmodel-compose`, `dev.chrisbanes.haze:haze:0.7.3`, `junit` for tests.
+- New deps (Kotlin 1.9.24 / Compose BOM 2024.06, no Kotlin 2.0 upgrade): `androidx.navigation:navigation-compose:2.7.7`, `androidx.lifecycle:lifecycle-viewmodel-compose`, `dev.chrisbanes.haze:haze:0.7.3` (Haze 1.x needs Kotlin 2.0 / Compose 1.7), `junit` for tests.
 - Manifest: `tools:node="remove"` on INTERNET, `allowBackup="false"`, drop the invalid `READ_EXERCISE_ROUTE`, keep the Health Connect rationale and privacy hooks pointing at the Privacy screen.
 - `make_instabeats.py` is retired once this lands; the repo is the source of truth.
 
-## 2. Data flow
+## 2. Data flow (approved)
 
-### 2.1 Models
+- **List.** Read `ExerciseSessionRecord` for 7, 14 or 30 days, following `pageToken` until it is null (today only the first page is read). Avg and peak BPM per session come from Health Connect `aggregate` (`HeartRateRecord.BPM_AVG`, `BPM_MAX`), not raw samples. The route badge comes from `exerciseRouteResult` (Data / ConsentRequired / NoData).
+- **Lap bars.** Raw HR samples are loaded only for the Home-card workout and the detail screen. Laps come from `session.laps`; if there are none, 10 equal time slices labelled "Effort over time" (never fake laps).
+- **Export.**
+  1. Route: real GPS from the session, or one-time `ExerciseRouteRequestContract` consent, or the existing synthetic 1 point/s track (the guide tells users to hide the map gauge for HR-only files).
+  2. HR samples read with paging, flattened and sorted by time.
+  3. Merge in one two-pointer pass that gives each track point the nearest-in-time HR sample. Same output as today, but O(n + m) instead of O(n × m).
+  4. `GpxBuilder` keeps Garmin TrackPointExtension v1 and strict `yyyy-MM-dd'T'HH:mm:ss'Z'` UTC times. `<type>` is set from the real sport (today it is always "cycling").
+  5. Save as `InstaBeats_<Sport>_<yyyy-MM-dd>.gpx`, with a `_HHmm` suffix on collision, then show the Export-done sheet.
+- **Exported marks.** The Exports tab lists the app's own files from MediaStore. Workout → file links live in app-private SharedPreferences (backup is off); deleting a file clears its mark.
+- **State.** One `AppViewModel` exposing Health Connect status (missing / no access / ready), the workout list, the open workout detail, and export status (idle / working / done / error). Screens read state and send intents back.
 
-```kotlin
-data class HrSample(val time: Instant, val bpm: Int)
-data class TrackPoint(val time: Instant, val lat: Double, val lon: Double, val eleMeters: Double?)
-data class Lap(val start: Instant, val end: Instant, val lengthMeters: Double?)
-enum class RouteState { HAS_ROUTE, NEEDS_CONSENT, NO_ROUTE }
-data class WorkoutSummary(
-    val id: String, val sport: Sport, val title: String?,
-    val start: Instant, val end: Instant,
-    val avgHr: Int?, val peakHr: Int?, val hrSampleCount: Int,
-    val avgSpeedMps: Double?, val maxSpeedMps: Double?,
-    val laps: List<Lap>, val routeState: RouteState,
-)
-```
+## 3. Error handling (presented, one decision open)
 
-`Sport` is our own enum (Cycling, IndoorCycling, Running, Treadmill, Hiking, Walking, Other) mapped once from `ExerciseSessionRecord.exerciseType`. It drives the card icon, the file name and the GPX `<trk><type>` (`cycling`, `running`, `hiking`, `walking`, else omitted). Today the type is hard-coded to `cycling` for every workout.
+Rules: every error says what happened and what to do; it is shown in place (card, sheet or screen), not as a toast; the app never exports made-up data.
 
-### 2.2 Paged reads
+- **Health Connect.** Missing or outdated → "Install/Update Health Connect" (Play Store). Unsupported device → explanation, no button. Permission cancelled → "InstaBeats needs workout and heart-rate access to work" + "Open Health Connect settings". Access revoked mid-use → back to Welcome, no crash. Rate-limited → "Health Connect is busy. Try again in a minute." + Retry.
+- **Export fixes compared with today.**
+  - No HR samples → export blocked (today it writes a fake 85 bpm via `?: 85L`).
+  - The synthetic route covers the whole workout (today it stops at 4 h / 14,400 points).
+  - A failed save deletes the `IS_PENDING` MediaStore row before showing "Couldn't save the file: <reason>." + Retry.
+  - HR gaps keep the nearest-sample behaviour on purpose, because how Insta360 handles a missing `gpxtpx:hr` is unverified.
+- **Other.** A file deleted outside the app is dropped from Exports and its mark cleared on refresh. Insta360 not installed → "Open Insta360" hidden. Empty range → "No workouts in the last 14 days. Record one on your watch, then come back." + a show-30-days button. An export keeps running across screen changes.
+- **Open decision:** when route consent is refused, ask "Export without GPS?" (Export / Cancel), as recommended, or auto-export HR-only like today.
 
-Every `readRecords` call goes through one helper in `HealthRepository`:
+## 4. Testing (proposed)
 
-```kotlin
-suspend fun <T : Record> readAll(type: KClass<T>, range: TimeRangeFilter): List<T> {
-    val out = mutableListOf<T>(); var token: String? = null
-    do {
-        val r = client.readRecords(ReadRecordsRequest(type, range, pageSize = 1000, pageToken = token))
-        out += r.records; token = r.pageToken
-    } while (token != null)
-    return out
-}
-```
-
-This replaces the current single-page reads, which silently drop everything after the first 1000 records (sessions and HR alike).
-
-### 2.3 Listing workouts
-
-1. `readAll(ExerciseSessionRecord)` for the chosen window (7, 14 or 30 days), newest first.
-2. For the summaries, `aggregate` is used rather than pulling raw samples: `HeartRateRecord.BPM_AVG`, `BPM_MAX`, `MEASUREMENTS_COUNT`, `SpeedRecord.SPEED_AVG`, `SPEED_MAX`, one `aggregate` call per session, run in parallel with a small concurrency limit (4) to stay inside Health Connect's rate limits.
-3. `routeState` comes from `session.exerciseRouteResult` (Data → HAS_ROUTE, ConsentRequired → NEEDS_CONSENT, NoData → NO_ROUTE).
-4. Laps come from `session.laps`. Best lap = shortest duration; ties keep the earlier one.
-
-The Workouts filters work on these summaries: "With GPS" = HAS_ROUTE or NEEDS_CONSENT, "HR only" = NO_ROUTE and `hrSampleCount > 0`.
-
-### 2.4 Export
-
-1. **Route.** HAS_ROUTE uses the route from the session. NEEDS_CONSENT launches `ExerciseRouteRequestContract` for that session id; a returned route is used, `null` (denied) falls through to step 1b. NO_ROUTE goes to 1b.
-   - **1b. HR-only.** A synthetic track of one point per HR sample, all at the **same** fixed coordinate. The current code drifts the point by a micro-offset each second, which makes Insta360 show a fake speed and distance; a fixed point keeps speed at 0. The coordinate is a constant in `GpxBuilder` (the current Chandigarh point), and the export sheet labels the file "Heart rate only, no map". Ask: confirm the fixed point should stay Chandigarh, or use 0,0.
-2. **Heart rate.** `readAll(HeartRateRecord)` over the session window, flatten `samples`, sort by time.
-3. **Merge** (`GpxBuilder.alignHr`, pure Kotlin). Both lists are sorted, so a single two-pointer pass assigns each track point its nearest HR sample in O(points + samples), replacing the O(points × samples) `minByOrNull`. A sample is used only if it is within **10 s** of the point; otherwise the point gets no `<gpxtpx:hr>` element. There is no invented default: the current code fills 85 bpm before the first sample and repeats the last value across gaps of any length.
-4. **Build.** `GpxBuilder.build(name, sport, points, hrByPoint)` writes GPX 1.1 with `gpxtpx` TrackPointExtension v1: times as strict `yyyy-MM-dd'T'HH:mm:ss'Z'` UTC, `lat`/`lon` with 7 decimals, `<ele>` only when the altitude is known (today missing altitude is written as 0 m, which draws a fake elevation profile), names XML-escaped.
-5. **Save.** `ExportStore.save(fileName, bytes)`: on Android 10+ MediaStore Downloads with `RELATIVE_PATH = Download/InstaBeats` and `IS_PENDING`; on Android 9 the legacy public Downloads directory, which needs `WRITE_EXTERNAL_STORAGE` with `maxSdkVersion="28"` (currently missing, so saving fails on Android 9). If `InstaBeats_<Sport>_<date>.gpx` already exists, the next free `_2`, `_3` suffix is used.
-6. **Sheet.** The ViewModel emits `ExportResult(uri, fileName, pointCount, hrMatched, hrOnly)`; the sheet shows it with Open Insta360 / Share / How to load it.
-
-Speed stays derived by Insta360 from the GPS points; `SpeedRecord` feeds the in-app summary only. The `READ_SPEED` permission stays because of that.
-
-### 2.5 State
-
-`AppViewModel` holds one `StateFlow<AppState>` (availability, permissions, window, workouts, selected workout detail, export in progress or result, exports list). Screens collect it and call ViewModel functions; no screen keeps its own copy of Health Connect data.
-
-## 3. Error handling
-
-Errors are values, not toasts: the repository and store return `Result`-style sealed types, and the ViewModel turns them into a message on the screen where the user is.
-
-| Situation | What the user sees |
-|---|---|
-| Health Connect not installed or needs an update (`SDK_UNAVAILABLE`, `SDK_UNAVAILABLE_PROVIDER_UPDATE_REQUIRED`) | Full-screen card with a button to the Play Store listing |
-| Permissions denied or revoked later | Permission screen again, with "Open Health Connect" to fix it in settings; checked on every resume |
-| No workouts in the window | Empty state that suggests a longer window |
-| Route consent denied | Export continues as HR-only, and the sheet says why there is no map |
-| Workout has no HR samples | Export button disabled, "No heart rate recorded for this workout" |
-| HR exists but none within 10 s of any point | Export allowed; the sheet warns "Heart rate didn't line up with the route" |
-| Health Connect rate limit or `RemoteException` | "Health Connect is busy, try again", with a retry button |
-| MediaStore insert/write fails | "Couldn't save to Downloads" with the reason; a half-written pending entry is deleted |
-| Insta360 not installed | "Open Insta360" becomes "Get Insta360" (Play Store) |
-
-Reads run on `Dispatchers.IO` inside `viewModelScope`; leaving a screen cancels its work, and a cancelled export deletes its pending MediaStore entry.
-
-## 4. Testing
-
-- **Unit tests (JVM, `app/src/test`)** for the pure parts:
-  - `GpxBuilder`: strict UTC time format (no fractions, `Z` suffix, local time zones don't leak in); `lat`/`lon` formatting with `Locale.US` under a comma-decimal default locale; `<ele>` omitted when unknown; XML escaping of `&`, `<`, `"` in names; sport → `<type>` mapping; output parses as XML with the `gpxtpx` namespace.
-  - `alignHr`: nearest sample chosen; ties pick the earlier sample; gap over 10 s gives no HR; no HR before the first sample; unsorted input handled; 4 h of 1 Hz points × 1 Hz samples finishes quickly.
-  - Synthetic track: one point per sample, constant coordinate.
-  - File naming: sport and date in the device's zone, collision suffixes.
-- **CI:** add the Gradle wrapper (8.11.1) to the repo, run `./gradlew testDebugUnitTest assembleDebug` on pushes to `main` and on pull requests (today the workflow only runs on `main`/`master` pushes and has no tests).
-- **Manual check on the Galaxy Watch 8 / phone:** one outdoor ride with GPS, one indoor workout (HR only), one workout over 1000 HR records; import each into Insta360 (Dashboard → Data source → Local files) and check the HR gauge, map and speed.
+- **JVM unit tests** in `app/src/test`, for the pure Kotlin parts only (no Robolectric, no instrumented tests):
+  - `GpxBuilder`: strict UTC time format (no fractional seconds, `Z` suffix, device time zone doesn't leak in); `lat`/`lon` written with a `.` decimal even when the default locale uses `,`; XML escaping of `&`, `<`, `>`, `"` in names; sport → `<type>` mapping; output parses as XML with the `gpxtpx` namespace.
+  - HR alignment: nearest sample chosen; ties go to the earlier sample; points before the first and after the last sample take the edge sample; unsorted input sorted first; a 4 h workout at 1 Hz on both sides runs in well under a second.
+  - Synthetic route: one point per second from start to end with no 4 h cap; no points when the workout has no HR.
+  - File naming: sport and date in the device's zone; `_HHmm` on collision.
+  - Lap fallback: 10 equal slices when `laps` is empty; the best lap is the shortest, ties go to the earlier lap.
+- **CI.** Commit the Gradle wrapper (8.11.1). The workflow runs `./gradlew testDebugUnitTest assembleDebug` on pushes to `main` and on pull requests (today it runs only on `main`/`master` pushes and has no tests). A failing test fails the build, so no APK is uploaded.
+- **Manual check before calling it done:** on the phone with the Galaxy Watch 8, export one outdoor workout with GPS, one indoor HR-only workout, and one long workout (over 1000 HR records); import each into Insta360 and confirm the HR gauge, map and speed.
 
 ## Out of scope
 
 Kotlin 2.0 / Compose 1.7 upgrade, Haze 1.x, writing any data back to Health Connect, cloud features of any kind.
-
-## Open questions
-
-1. HR-only fixed coordinate: keep the current Chandigarh point, or 0,0?
-2. HR gap threshold of 10 s: fine as a fixed value, or should it be a setting?
