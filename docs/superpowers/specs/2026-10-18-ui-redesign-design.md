@@ -28,6 +28,10 @@ Five AI images (FLUX.1-schnell, Apache 2.0, generated locally), 1080×1920, ship
 
 Scrim per image: top alpha = clamp(1 − 60 / titleLuma, 0.40, 0.78); card glass alpha = clamp(1 − 60 / cardLuma, 0.38, 0.70). Before shipping: soften the fake sponsor lettering on the drift car, check `hd_supermoto_1001` for fake text, and check every image at 100% for AI artefacts.
 
+### App icon: "Pulse Frame" (approved 2026-10-18)
+
+Yellow `#FFC93C` viewfinder corners framing a coral `#FF6B5E` heartbeat on near-black `#0A0A0B`. Adaptive launcher icon (`mipmap-anydpi-v26/ic_launcher*.xml`, vector foreground scaled to 78% to sit in the safe zone, solid background, monochrome layer for Android 13+ themed icons). minSdk is 28, so no PNG mipmaps are needed. Play Store 512×512 icon and source SVG in `docs/store/`.
+
 ### About tab (approved 2026-10-18)
 
 Fourth tab in the glass tab bar, same Studio look: the founder story, then credits and a link.
