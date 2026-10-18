@@ -1,0 +1,40 @@
+name: Build InstaBeats APK
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build-android-apk:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 1. Checkout Repository Code
+        uses: actions/checkout@v4
+
+      - name: 2. Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: 3. Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: 4. Accept Android SDK Licenses
+        run: yes | sdkmanager --licenses || true
+
+      - name: 5. Set up Gradle 8.7
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.7'
+
+      - name: 6. Build Debug APK
+        run: gradle assembleDebug --no-daemon --stacktrace
+
+      - name: 7. Upload Ready-to-Install InstaBeats APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: InstaBeats-APK
+          path: app/build/outputs/apk/debug/app-debug.apk
