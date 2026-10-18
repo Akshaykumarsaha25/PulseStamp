@@ -1,6 +1,6 @@
 # InstaBeats UI redesign: design spec
 
-Status: sections 1 and 2 approved; section 3 presented with one open decision; section 4 proposed below and needs approval.
+Status: sections 1 to 3 approved; section 4 proposed below and needs approval.
 
 ## Goal
 
@@ -54,7 +54,7 @@ app/src/main/java/com/instabeats/app/
 - **List.** Read `ExerciseSessionRecord` for 7, 14 or 30 days, following `pageToken` until it is null (today only the first page is read). Avg and peak BPM per session come from Health Connect `aggregate` (`HeartRateRecord.BPM_AVG`, `BPM_MAX`), not raw samples. The route badge comes from `exerciseRouteResult` (Data / ConsentRequired / NoData).
 - **Lap bars.** Raw HR samples are loaded only for the Home-card workout and the detail screen. Laps come from `session.laps`; if there are none, 10 equal time slices labelled "Effort over time" (never fake laps).
 - **Export.**
-  1. Route: real GPS from the session, or one-time `ExerciseRouteRequestContract` consent, or the existing synthetic 1 point/s track (the guide tells users to hide the map gauge for HR-only files).
+  1. Route: real GPS from the session, or one-time `ExerciseRouteRequestContract` consent (if refused, the "Export without GPS?" prompt in section 3), or the existing synthetic 1 point/s track (the guide tells users to hide the map gauge for HR-only files).
   2. HR samples read with paging, flattened and sorted by time.
   3. Merge in one two-pointer pass that gives each track point the nearest-in-time HR sample. Same output as today, but O(n + m) instead of O(n × m).
   4. `GpxBuilder` keeps Garmin TrackPointExtension v1 and strict `yyyy-MM-dd'T'HH:mm:ss'Z'` UTC times. `<type>` is set from the real sport (today it is always "cycling").
@@ -62,7 +62,7 @@ app/src/main/java/com/instabeats/app/
 - **Exported marks.** The Exports tab lists the app's own files from MediaStore. Workout → file links live in app-private SharedPreferences (backup is off); deleting a file clears its mark.
 - **State.** One `AppViewModel` exposing Health Connect status (missing / no access / ready), the workout list, the open workout detail, and export status (idle / working / done / error). Screens read state and send intents back.
 
-## 3. Error handling (presented, one decision open)
+## 3. Error handling (approved)
 
 Rules: every error says what happened and what to do; it is shown in place (card, sheet or screen), not as a toast; the app never exports made-up data.
 
@@ -73,7 +73,7 @@ Rules: every error says what happened and what to do; it is shown in place (card
   - A failed save deletes the `IS_PENDING` MediaStore row before showing "Couldn't save the file: <reason>." + Retry.
   - HR gaps keep the nearest-sample behaviour on purpose, because how Insta360 handles a missing `gpxtpx:hr` is unverified.
 - **Other.** A file deleted outside the app is dropped from Exports and its mark cleared on refresh. Insta360 not installed → "Open Insta360" hidden. Empty range → "No workouts in the last 14 days. Record one on your watch, then come back." + a show-30-days button. An export keeps running across screen changes.
-- **Open decision:** when route consent is refused, ask "Export without GPS?" (Export / Cancel), as recommended, or auto-export HR-only like today.
+- **Route consent refused:** ask "Export without GPS?" (Export / Cancel). Export writes the HR-only file with the synthetic track; Cancel returns to the workout. Decided 2026-10-18.
 
 ## 4. Testing (proposed)
 
