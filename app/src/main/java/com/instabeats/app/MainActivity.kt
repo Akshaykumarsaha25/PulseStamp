@@ -50,8 +50,7 @@ class MainActivity : ComponentActivity() {
 
     // Full set requested from Health Connect
     private val allRequestedPermissions = basePermissions + setOf(
-        HealthPermission.getReadPermission(SpeedRecord::class),
-        HealthPermission.PERMISSION_READ_EXERCISE_ROUTES
+        HealthPermission.getReadPermission(SpeedRecord::class)
     )
 
     // Strict UTC ISO-8601 formatter without nanoseconds (Required by Insta360 Local Files parser)

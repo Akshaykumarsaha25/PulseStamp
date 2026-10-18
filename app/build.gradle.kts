@@ -5,7 +5,7 @@ plugins {
 
 android {
     namespace = "com.instabeats.app"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.instabeats.app"
@@ -31,7 +31,7 @@ android {
 }
 
 dependencies {
-    // Official Stable Health Connect SDK (Requires compileSdk 35)
+    // Stable Health Connect SDK (AAR requires compileSdk 36 + AGP 8.9.1)
     implementation("androidx.health.connect:connect-client:1.1.0")
 
     // Jetpack Compose & AndroidX Core
