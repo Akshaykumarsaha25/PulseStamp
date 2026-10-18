@@ -12,7 +12,7 @@ Redesign InstaBeats into a polished, Gen Z, Insta360-style app (AI action hero s
 - **Home layout A:** full-bleed hero, stacked "Insta / Beats" wordmark, tagline "Stamp your beats on every frame.", glass card with the latest workout (BPM pulsing at the real rate, lap bars with the best lap in yellow, "Export for Insta360"), glass tab bar.
 - **Hero slideshow:** fade only (about 4 s hold, 2.2 s crossfade, one continuous gentle drift/zoom per photo, no blur filters, no progress bars).
 - **Privacy on Welcome:** "Your heart rate stays on your phone." No INTERNET permission (`tools:node="remove"`), no account, cloud, sync or analytics, `allowBackup="false"`, files only in `Downloads/InstaBeats`.
-- **Screen flow:** Welcome (first run) → Health Connect permission → Home. Tabs Home / Workouts (filters All, With GPS, HR only; 7, 14, 30 days) / Exports (share, delete, How to use, Privacy). Workout detail → export (route consent if needed) → "Export done" sheet (Open Insta360 / Share / How to load it) → Insta360 guide. File names `InstaBeats_<Sport>_<yyyy-MM-dd>.gpx`. HR zones shaded relative to the workout's peak.
+- **Screen flow:** Welcome (first run) → Health Connect permission → Home. Tabs Home / Workouts (filters All, With GPS, HR only; 7, 14, 30 days) / Exports (share, delete, How to use, Privacy) / About. Workout detail → export (route consent if needed) → "Export done" sheet (Open Insta360 / Share / How to load it) → Insta360 guide. File names `InstaBeats_<Sport>_<yyyy-MM-dd>.gpx`. HR zones shaded relative to the workout's peak.
 
 ### Hero images
 
@@ -28,6 +28,15 @@ Five AI images (FLUX.1-schnell, Apache 2.0, generated locally), 1080×1920, ship
 
 Scrim per image: top alpha = clamp(1 − 60 / titleLuma, 0.40, 0.78); card glass alpha = clamp(1 − 60 / cardLuma, 0.38, 0.70). Before shipping: soften the fake sponsor lettering on the drift car, check `hd_supermoto_1001` for fake text, and check every image at 100% for AI artefacts.
 
+### About tab (approved 2026-10-18)
+
+Fourth tab in the glass tab bar, same Studio look: the founder story, then credits and a link.
+
+- Headline (Unbounded): "My heart was racing. My video didn't show it."
+- Story (Manrope), with "No thanks. I wanted full control over what I post." in bold, signed "— Akshay Kumar Saha".
+- Credits: "Made by Akshay Kumar Saha", "Built with help from Claude by Anthropic", app version from the installed package's `versionName`.
+- "View on GitHub" (yellow action) opens https://github.com/akshaykumarsaha25-maker/InstaBeats in the browser with an `ACTION_VIEW` intent. The app itself still has no INTERNET permission; if no browser is installed, the button shows "No browser found" instead of crashing.
+
 ## 1. Structure (approved)
 
 ```
@@ -41,7 +50,7 @@ app/src/main/java/com/instabeats/app/
     ├── AppViewModel.kt        single ViewModel; screens render its state
     ├── theme/                 colours, bundled Unbounded + Manrope (OFL) in res/font
     ├── components/            Glass, HeroSlideshow (fade), PulsingBpm, LapBars, HrChart
-    └── screens/               Welcome, Home, Workouts, WorkoutDetail, ExportSheet, Guide, Exports
+    └── screens/               Welcome, Home, Workouts, WorkoutDetail, ExportSheet, Guide, Exports, About
 ```
 
 - UI never touches Health Connect or files; only the ViewModel calls the repository and the store.

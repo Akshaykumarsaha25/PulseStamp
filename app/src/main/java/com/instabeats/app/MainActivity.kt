@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -27,6 +28,7 @@ import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.*
 import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
+import com.instabeats.app.ui.screens.AboutScreen
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -86,7 +88,32 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = Color(0xFF121212)
                 ) {
-                    InstaBeatsScreen(healthConnectClient)
+                    AppTabs(healthConnectClient)
+                }
+            }
+        }
+    }
+
+    @Composable
+    fun AppTabs(client: HealthConnectClient) {
+        var tab by rememberSaveable { mutableStateOf(0) }
+        Column(modifier = Modifier.fillMaxSize()) {
+            Box(modifier = Modifier.weight(1f)) {
+                if (tab == 0) InstaBeatsScreen(client) else AboutScreen()
+            }
+            NavigationBar(containerColor = Color.Black) {
+                listOf("Workouts", "About").forEachIndexed { i, label ->
+                    NavigationBarItem(
+                        selected = tab == i,
+                        onClick = { tab = i },
+                        icon = {},
+                        label = { Text(label) },
+                        colors = NavigationBarItemDefaults.colors(
+                            selectedTextColor = Color(0xFFFFC93C),
+                            unselectedTextColor = Color.Gray,
+                            indicatorColor = Color.Transparent,
+                        ),
+                    )
                 }
             }
         }
