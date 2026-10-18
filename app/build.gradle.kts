@@ -11,8 +11,8 @@ android {
         applicationId = "com.instabeats.app"
         minSdk = 28
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "2.0"
     }
 
     buildFeatures {
@@ -41,6 +41,10 @@ dependencies {
     implementation(platform("androidx.compose:compose-bom:2024.06.00"))
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.material3:material3")
+    implementation("androidx.navigation:navigation-compose:2.7.7")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.4")
+    // Frosted glass: real blur on Android 12+, tinted fallback below
+    implementation("dev.chrisbanes.haze:haze:0.7.3")
 
     testImplementation("junit:junit:4.13.2")
 }

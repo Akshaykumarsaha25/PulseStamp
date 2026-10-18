@@ -1,41 +1,53 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Health Connect Read Permissions -->
+    <!-- Privacy guarantee: no network access at all, even if a library asks for it -->
+    <uses-permission android:name="android.permission.INTERNET" tools:node="remove" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" tools:node="remove" />
+
+    <!-- Health Connect read permissions -->
     <uses-permission android:name="android.permission.health.READ_EXERCISE" />
-    <uses-permission android:name="android.permission.health.READ_EXERCISE_ROUTE" />
     <uses-permission android:name="android.permission.health.READ_EXERCISE_ROUTES" />
     <uses-permission android:name="android.permission.health.READ_HEART_RATE" />
     <uses-permission android:name="android.permission.health.READ_SPEED" />
 
-    <!-- Package visibility for Health Connect -->
+    <!-- Android 9 only: saving into the public Downloads folder -->
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
+
     <queries>
         <package android:name="com.google.android.apps.healthdata" />
+        <package android:name="com.arashivision.insta360akiko" />
+        <package android:name="com.arashivision.insta360one" />
     </queries>
 
     <application
-        android:allowBackup="true"
+        android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:label="InstaBeats"
         android:supportsRtl="true"
-        android:theme="@android:style/Theme.DeviceDefault.NoActionBar">
+        android:theme="@android:style/Theme.DeviceDefault.NoActionBar"
+        tools:targetApi="34">
 
         <activity
             android:name=".MainActivity"
-            android:exported="true">
+            android:exported="true"
+            android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <!-- Android 14+ Health Connect Permission Rationale Intent -->
+            <!-- Health Connect permission rationale (Android 13 and below) -->
             <intent-filter>
                 <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
             </intent-filter>
         </activity>
 
-        <!-- Android 14+ System Health Connect Privacy Alias -->
+        <!-- Health Connect privacy link (Android 14+) opens the Privacy screen -->
         <activity-alias
             android:name="ViewPermissionUsageActivity"
             android:exported="true"
@@ -47,5 +59,15 @@
             </intent-filter>
         </activity-alias>
 
+        <!-- Sharing files saved on Android 9 -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.files"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
     </application>
 </manifest>

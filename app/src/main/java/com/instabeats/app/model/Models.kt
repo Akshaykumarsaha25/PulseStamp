@@ -20,12 +20,34 @@ data class Lap(val start: Instant, val end: Instant)
  * Our own sport list, mapped once from Health Connect's exercise type.
  * [fileLabel] goes into export file names, [gpxType] into GPX `<trk><type>` (null = omitted).
  */
-enum class Sport(val fileLabel: String, val gpxType: String?) {
-    CYCLING("Cycling", "cycling"),
-    INDOOR_CYCLING("IndoorCycling", "cycling"),
-    RUNNING("Running", "running"),
-    TREADMILL("Treadmill", "running"),
-    HIKING("Hiking", "hiking"),
-    WALKING("Walking", "walking"),
-    OTHER("Workout", null),
+enum class Sport(val fileLabel: String, val gpxType: String?, val displayName: String) {
+    CYCLING("Cycling", "cycling", "Ride"),
+    INDOOR_CYCLING("IndoorCycling", "cycling", "Indoor bike"),
+    RUNNING("Running", "running", "Run"),
+    TREADMILL("Treadmill", "running", "Treadmill run"),
+    HIKING("Hiking", "hiking", "Hike"),
+    WALKING("Walking", "walking", "Walk"),
+    OTHER("Workout", null, "Workout"),
 }
+
+/** Where a workout's GPS route stands in Health Connect. */
+enum class RouteState { HAS_ROUTE, NEEDS_CONSENT, NO_ROUTE }
+
+/** One row in the workout list; HR numbers come from Health Connect aggregates. */
+data class WorkoutSummary(
+    val id: String,
+    val sport: Sport,
+    val title: String?,
+    val start: Instant,
+    val end: Instant,
+    val avgBpm: Long?,
+    val peakBpm: Long?,
+    val laps: List<Lap>,
+    val routeState: RouteState,
+) {
+    val name: String get() = title?.takeIf { it.isNotBlank() } ?: sport.displayName
+    val hasGps: Boolean get() = routeState != RouteState.NO_ROUTE
+}
+
+/** A GPX file this app saved in Downloads/InstaBeats. */
+data class ExportedFile(val uri: String, val name: String, val createdMillis: Long, val sizeBytes: Long)
