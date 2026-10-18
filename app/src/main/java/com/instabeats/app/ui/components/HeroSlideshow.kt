@@ -15,7 +15,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameMillis
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -115,8 +114,8 @@ fun HeroSlideshow(modifier: Modifier = Modifier, reduceMotion: Boolean = false, 
                             0.30f to Color.Black.copy(alpha = top * 0.55f),
                             0.48f to Color.Transparent,
                             1f to Color.Black.copy(alpha = 0.82f),
-                            start = Offset.Zero,
-                            end = Offset(0f, size.height),
+                            startY = 0f,
+                            endY = size.height,
                         )
                     )
                 },
