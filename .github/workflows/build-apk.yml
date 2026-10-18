@@ -3,6 +3,7 @@ name: Build InstaBeats APK
 on:
   push:
     branches: [ "main", "master" ]
+  pull_request:
   workflow_dispatch:
 
 jobs:
@@ -25,13 +26,18 @@ jobs:
       - name: 4. Accept Android SDK Licenses
         run: yes | sdkmanager --licenses || true
 
-      - name: 5. Set up Gradle 8.11.1
+      - name: 5. Set up Gradle (wrapper 8.11.1)
         uses: gradle/actions/setup-gradle@v3
-        with:
-          gradle-version: '8.11.1'
 
-      - name: 6. Build Debug APK
-        run: gradle assembleDebug --no-daemon --stacktrace
+      - name: 6. Run unit tests and build Debug APK
+        run: ./gradlew testDebugUnitTest assembleDebug --no-daemon --stacktrace
+
+      - name: Upload test report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: InstaBeats-test-report
+          path: app/build/reports/tests/
 
       - name: 7. Upload Ready-to-Install InstaBeats APK
         uses: actions/upload-artifact@v4

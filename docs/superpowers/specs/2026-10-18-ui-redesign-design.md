@@ -1,6 +1,6 @@
 # InstaBeats UI redesign: design spec
 
-Status: sections 1 to 3 approved; section 4 proposed below and needs approval.
+Status: all four sections approved. Section 4's unit tests are implemented (pure Kotlin parts in `model/`, `gpx/`, `export/FileNames.kt`).
 
 ## Goal
 
@@ -75,12 +75,14 @@ Rules: every error says what happened and what to do; it is shown in place (card
 - **Other.** A file deleted outside the app is dropped from Exports and its mark cleared on refresh. Insta360 not installed → "Open Insta360" hidden. Empty range → "No workouts in the last 14 days. Record one on your watch, then come back." + a show-30-days button. An export keeps running across screen changes.
 - **Route consent refused:** ask "Export without GPS?" (Export / Cancel). Export writes the HR-only file with the synthetic track; Cancel returns to the workout. Decided 2026-10-18.
 
-## 4. Testing (proposed)
+## 4. Testing (approved)
 
 - **JVM unit tests** in `app/src/test`, for the pure Kotlin parts only (no Robolectric, no instrumented tests):
   - `GpxBuilder`: strict UTC time format (no fractional seconds, `Z` suffix, device time zone doesn't leak in); `lat`/`lon` written with a `.` decimal even when the default locale uses `,`; XML escaping of `&`, `<`, `>`, `"` in names; sport → `<type>` mapping; output parses as XML with the `gpxtpx` namespace.
   - HR alignment: nearest sample chosen; ties go to the earlier sample; points before the first and after the last sample take the edge sample; unsorted input sorted first; a 4 h workout at 1 Hz on both sides runs in well under a second.
-  - Synthetic route: one point per second from start to end with no 4 h cap; no points when the workout has no HR.
+  - Synthetic route: one point per second from start to end with no 4 h cap, original coordinates.
+  - No HR samples: `GpxBuilder` refuses to build, so no file with made-up heart rate can be written.
+  - Elevation: unknown altitude is still written as `0.00`, as today (Insta360's handling of a missing `<ele>` is unverified).
   - File naming: sport and date in the device's zone; `_HHmm` on collision.
   - Lap fallback: 10 equal slices when `laps` is empty; the best lap is the shortest, ties go to the earlier lap.
 - **CI.** Commit the Gradle wrapper (8.11.1). The workflow runs `./gradlew testDebugUnitTest assembleDebug` on pushes to `main` and on pull requests (today it runs only on `main`/`master` pushes and has no tests). A failing test fails the build, so no APK is uploaded.
