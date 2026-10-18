@@ -84,7 +84,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val _state = MutableStateFlow(AppState(welcomed = prefs.getBoolean(KEY_WELCOMED, false)))
     val state: StateFlow<AppState> = _state.asStateFlow()
 
-    /** Called on start and every resume, so revoked access sends the user back to Welcome. */
+    /** Called on start and every resume, so revoked access sends the user back to Welcome and the list stays fresh. */
     fun refreshAccess() {
         viewModelScope.launch {
             val access = when (health.availability()) {
@@ -92,14 +92,14 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 HealthAvailability.NEEDS_UPDATE -> Access.NEEDS_UPDATE
                 HealthAvailability.READY -> if (runCatching { health.hasAccess() }.getOrDefault(false)) Access.READY else Access.NO_ACCESS
             }
-            val wasReady = _state.value.access == Access.READY
             _state.update {
                 it.copy(
                     access = if (access == Access.NO_ACCESS && it.access == Access.DENIED) Access.DENIED else access,
                     insta360Installed = store.insta360Intent() != null,
                 )
             }
-            if (access == Access.READY && (!wasReady || _state.value.workouts.isEmpty())) {
+            // Reload on every resume: new workouts sync into Health Connect while the app sits in the background
+            if (access == Access.READY) {
                 loadWorkouts()
                 loadExports()
             }
