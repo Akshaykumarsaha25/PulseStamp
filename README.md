@@ -1,6 +1,6 @@
-# InstaBeats
+# PulseStamp
 
-Put your real heart rate and GPS on your Insta360 videos. InstaBeats reads a workout from your phone (Health Connect, or Samsung Health for Galaxy Watch GPS) and saves a GPX file that the Insta360 app can use for its gauges.
+Put your real heart rate and GPS on your Insta360 videos. PulseStamp reads a workout from your phone (Health Connect, or Samsung Health for Galaxy Watch GPS) and saves a GPX file that the Insta360 app can use for its gauges.
 
 Everything stays on your phone. The app has no internet access, no account and no cloud. A file only leaves your phone if you choose to share it.
 
@@ -10,7 +10,7 @@ Everything stays on your phone. The app has no internet access, no account and n
 - Galaxy Watch GPS routes are read with the Samsung Health Data SDK.
 - Fonts: Unbounded and Manrope (SIL Open Font License, see `docs/licenses/`).
 
-Samsung and Samsung Health are trademarks of Samsung Electronics Co., Ltd. InstaBeats is an independent app, not made or endorsed by Samsung.
+PulseStamp is an independent app. Not affiliated with Insta360 (Arashi Vision), Instagram (Meta), Samsung or Google. Samsung and Samsung Health are trademarks of Samsung Electronics Co., Ltd.
 
 ## Building
 

@@ -1,4 +1,4 @@
-name: Build InstaBeats APK
+name: Build PulseStamp APK
 
 on:
   push:
@@ -66,13 +66,13 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: InstaBeats-test-report
+          name: PulseStamp-test-report
           path: app/build/reports/tests/
 
-      - name: 7. Upload Ready-to-Install InstaBeats APK
+      - name: 7. Upload Ready-to-Install PulseStamp APK
         uses: actions/upload-artifact@v4
         with:
-          name: InstaBeats-APK
+          name: PulseStamp-APK
           path: app/build/outputs/apk/debug/app-debug.apk
           # The repo is public, so keep test builds around only briefly
           retention-days: 7

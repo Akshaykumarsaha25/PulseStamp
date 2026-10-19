@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace = "com.instabeats.app"
+    namespace = "com.pulsestamp.app"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.instabeats.app"
+        applicationId = "com.pulsestamp.app"
         minSdk = 28
         targetSdk = 36
         // Every Play upload needs a higher number; the release workflow passes one in
