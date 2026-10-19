@@ -167,7 +167,7 @@ fun ExportOverlay(
                     style = body(13f, color = Studio.Mu),
                 )
                 step.reason?.let {
-                    Text("Samsung Health said: $it", style = body(12f, color = Studio.Coral))
+                    Text(it, style = body(12f, color = Studio.Coral))
                 }
                 YellowButton("Export") { onExportWithoutGps(step.workoutId) }
                 GhostButton("Cancel", Modifier.fillMaxWidth(), onDismiss)

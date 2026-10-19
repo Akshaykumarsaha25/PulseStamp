@@ -25,7 +25,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.instabeats.app.model.fromSamsung
 import com.instabeats.app.ui.AppState
+import com.instabeats.app.ui.SamsungGps
 import com.instabeats.app.ui.components.GhostButton
 import com.instabeats.app.ui.madeLabel
 import com.instabeats.app.ui.theme.Studio
@@ -62,7 +64,7 @@ private val FAQS = listOf(
             "Open Samsung Health and tap ⋮ › Settings › About Samsung Health.",
             "Tap the version line quickly 10 times or more, then tap \"Developer mode (Samsung Health Data SDK)\" and agree to the notice. Not the one that says \"SDK for Android\".",
             "Turn on the Developer mode switch. Leave App package name and Access code empty.",
-            "Back in InstaBeats, export your ride. When Samsung Health asks, allow Exercise and Exercise location.",
+            "Back in InstaBeats, open Workouts and tap Allow Samsung Health (or export a ride). Allow Exercise and Location.",
         ),
         "This only lets InstaBeats read your workouts and routes on this phone. InstaBeats has no internet access, so nothing is ever sent anywhere automatically. A file only leaves your phone if you choose to share it.",
     ),
@@ -88,6 +90,7 @@ fun FaqScreen(
     state: AppState,
     samsungHealthInstalled: Boolean,
     onCheckAgain: () -> Unit,
+    onAllowSamsung: () -> Unit,
     onOpenSamsungHealth: () -> Unit,
     onOpenHealthConnect: () -> Unit,
     bottomSpace: Dp,
@@ -100,7 +103,7 @@ fun FaqScreen(
             Modifier.padding(horizontal = 14.dp).padding(top = 16.dp).navigationBarsPadding().padding(bottom = bottomSpace + 12.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            SyncCheck(state, samsungHealthInstalled, onCheckAgain, onOpenSamsungHealth, onOpenHealthConnect)
+            SyncCheck(state, samsungHealthInstalled, onCheckAgain, onAllowSamsung, onOpenSamsungHealth, onOpenHealthConnect)
             FAQS.forEachIndexed { i, faq ->
                 FaqItem(faq, expanded = open == i, onToggle = { open = if (open == i) -1 else i })
             }
@@ -114,10 +117,11 @@ private fun SyncCheck(
     state: AppState,
     samsungHealthInstalled: Boolean,
     onCheckAgain: () -> Unit,
+    onAllowSamsung: () -> Unit,
     onOpenSamsungHealth: () -> Unit,
     onOpenHealthConnect: () -> Unit,
 ) {
-    val newest = state.workouts.maxByOrNull { it.end }
+    val newest = state.workouts.filterNot { it.fromSamsung }.maxByOrNull { it.end }
     val stale = newest == null || Duration.between(newest.end, Instant.now()) > Duration.ofDays(3)
     ListCard {
         Text("Is your watch syncing?", style = display(15))
@@ -135,7 +139,18 @@ private fun SyncCheck(
                 modifier = Modifier.padding(top = 4.dp),
             )
         }
+        val gps = when (state.samsungGps) {
+            SamsungGps.UNAVAILABLE -> null
+            SamsungGps.NEEDS_ACCESS -> "Samsung Health GPS: not allowed yet."
+            SamsungGps.READY -> "Samsung Health GPS: connected. Rides missing from Health Connect are read from Samsung Health."
+        }
+        gps?.let { Text(it, style = body(12f, color = Studio.Mu), modifier = Modifier.padding(top = 6.dp)) }
+        state.samsungError?.let { Text("Samsung Health said: $it", style = body(12f, color = Studio.Coral), modifier = Modifier.padding(top = 4.dp)) }
         Spacer(Modifier.height(12.dp))
+        if (state.samsungGps == SamsungGps.NEEDS_ACCESS) {
+            GhostButton("Allow Samsung Health", Modifier.fillMaxWidth(), onAllowSamsung)
+            Spacer(Modifier.height(8.dp))
+        }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             GhostButton("Check again", onClick = onCheckAgain)
             if (samsungHealthInstalled) GhostButton("Samsung Health", onClick = onOpenSamsungHealth)

@@ -149,6 +149,7 @@ private fun MainNav(vm: AppViewModel, state: AppState, reduceMotion: Boolean) {
                             onShow30 = { vm.setRange(30) },
                             onOpen = openDetail,
                             onRetry = vm::loadWorkouts,
+                            onAllowSamsung = { context.findActivity()?.let(vm::allowSamsung) },
                         )
                         Tab.EXPORTS -> ExportsScreen(
                             state,
@@ -162,6 +163,7 @@ private fun MainNav(vm: AppViewModel, state: AppState, reduceMotion: Boolean) {
                             state,
                             samsungHealthInstalled = vm.health.samsungHealthIntent() != null,
                             onCheckAgain = vm::loadWorkouts,
+                            onAllowSamsung = { context.findActivity()?.let(vm::allowSamsung) },
                             onOpenSamsungHealth = { context.launch(vm.health.samsungHealthIntent()) },
                             onOpenHealthConnect = { context.launch(vm.health.settingsIntent()) },
                             bottomSpace = TabBarSpace,

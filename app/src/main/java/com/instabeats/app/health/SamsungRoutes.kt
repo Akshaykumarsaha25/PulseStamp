@@ -3,6 +3,9 @@ package com.instabeats.app.health
 import android.app.Activity
 import android.content.Context
 import android.os.Build
+import com.instabeats.app.model.HrSample
+import com.instabeats.app.model.SamsungSession
+import com.instabeats.app.model.Sport
 import com.instabeats.app.model.TrackPoint
 import com.instabeats.app.model.bestOverlap
 import com.samsung.android.sdk.health.data.HealthDataService
@@ -13,6 +16,7 @@ import com.samsung.android.sdk.health.data.error.ResolvablePlatformException
 import com.samsung.android.sdk.health.data.permission.AccessType
 import com.samsung.android.sdk.health.data.permission.Permission
 import com.samsung.android.sdk.health.data.request.DataType
+import com.samsung.android.sdk.health.data.request.DataType.ExerciseType.PredefinedExerciseType
 import com.samsung.android.sdk.health.data.request.DataTypes
 import com.samsung.android.sdk.health.data.request.InstantTimeFilter
 import kotlinx.coroutines.Dispatchers
@@ -54,23 +58,60 @@ class SamsungRoutes(private val context: Context) {
         store.requestPermissions(permissions, activity).containsAll(permissions)
     }
 
-    /** Start and end of every Samsung Health workout in the window that has a route. */
-    suspend fun routedSessions(start: Instant, end: Instant): List<Pair<Instant, Instant>> =
-        sessions(start, end).filter { !it.route.isNullOrEmpty() }.map { it.startTime to it.endTime }
+    /** Every Samsung Health workout in the window, so rides missing from Health Connect still show. */
+    suspend fun workouts(start: Instant, end: Instant): List<SamsungSession> =
+        sessions(start, end).map { (session, sport, title) ->
+            SamsungSession(
+                start = session.startTime,
+                end = session.endTime,
+                sport = sport,
+                title = session.customTitle ?: title,
+                hasRoute = !session.route.isNullOrEmpty(),
+                avgBpm = session.meanHeartRate?.takeIf { it > 0 }?.toLong(),
+                peakBpm = session.maxHeartRate?.takeIf { it > 0 }?.toLong(),
+            )
+        }
+
+    /** Why the last [route] came back empty, in plain words, for the export sheet. */
+    var routeProblem: String? = null
+        private set
 
     /** The route of the Samsung Health workout that best matches this one, or null. */
     suspend fun route(start: Instant, end: Instant): List<TrackPoint>? {
-        val candidates = sessions(start.minus(SLACK), end.plus(SLACK)).filter { !it.route.isNullOrEmpty() }
-        val best = bestOverlap(start, end, candidates.map { it.startTime to it.endTime }) ?: return null
-        return candidates[best].route.orEmpty()
+        val near = sessions(start.minus(SLACK), end.plus(SLACK)).map { it.first }
+        val error = lastError
+        val points = match(start, end, near) { !it.route.isNullOrEmpty() }?.route.orEmpty()
             .sortedBy { it.timestamp }
             .map { TrackPoint(it.timestamp, it.latitude.toDouble(), it.longitude.toDouble(), it.altitude?.toDouble()) }
             .takeIf { it.isNotEmpty() }
+        routeProblem = when {
+            points != null -> null
+            error != null -> "Samsung Health said: $error"
+            near.isEmpty() -> "Samsung Health has no workout at this time."
+            near.all { it.route.isNullOrEmpty() } -> "Samsung Health has this workout but gave no GPS route for it."
+            else -> "Samsung Health's route didn't line up with this workout's time."
+        }
+        return points
     }
 
-    private suspend fun sessions(start: Instant, end: Instant): List<ExerciseSession> =
+    /** Heart rate the watch logged during the matching workout, for rides Health Connect doesn't have. */
+    suspend fun heartRate(start: Instant, end: Instant): List<HrSample> {
+        val near = sessions(start.minus(SLACK), end.plus(SLACK)).map { it.first }
+        return match(start, end, near) { s -> s.log.orEmpty().any { it.heartRate != null } }?.log.orEmpty()
+            .mapNotNull { log -> log.heartRate?.takeIf { it > 0 }?.let { HrSample(log.timestamp, it.toLong()) } }
+            .sortedBy { it.time }
+    }
+
+    private fun match(start: Instant, end: Instant, near: List<ExerciseSession>, keep: (ExerciseSession) -> Boolean): ExerciseSession? {
+        val candidates = near.filter(keep)
+        val best = bestOverlap(start, end, candidates.map { it.startTime to it.endTime }) ?: return null
+        return candidates[best]
+    }
+
+    /** Each session with the sport and title of the workout it belongs to. */
+    private suspend fun sessions(start: Instant, end: Instant): List<Triple<ExerciseSession, Sport, String?>> =
         guarded(emptyList()) {
-            val out = mutableListOf<ExerciseSession>()
+            val out = mutableListOf<Triple<ExerciseSession, Sport, String?>>()
             var token: String? = null
             do {
                 val builder = DataTypes.EXERCISE.readDataRequestBuilder
@@ -79,7 +120,9 @@ class SamsungRoutes(private val context: Context) {
                 token?.let { builder.setPageToken(it) }
                 val response = store.readData(builder.build())
                 response.dataList.forEach { point ->
-                    out += point.getValue(DataType.ExerciseType.SESSIONS).orEmpty()
+                    val sport = sportOf(point.getValue(DataType.ExerciseType.EXERCISE_TYPE))
+                    val title = point.getValue(DataType.ExerciseType.CUSTOM_TITLE)
+                    point.getValue(DataType.ExerciseType.SESSIONS).orEmpty().forEach { out += Triple(it, sport, title) }
                 }
                 token = response.pageToken
             } while (!token.isNullOrEmpty())
@@ -103,6 +146,16 @@ class SamsungRoutes(private val context: Context) {
                 fallback
             }
         }
+
+    private fun sportOf(type: PredefinedExerciseType?): Sport = when (type) {
+        PredefinedExerciseType.BIKING, PredefinedExerciseType.MOUNTAIN_BIKING -> Sport.CYCLING
+        PredefinedExerciseType.STATIONARY_BIKING -> Sport.INDOOR_CYCLING
+        PredefinedExerciseType.RUNNING, PredefinedExerciseType.TRACK_RUNNING -> Sport.RUNNING
+        PredefinedExerciseType.TREADMILL -> Sport.TREADMILL
+        PredefinedExerciseType.HIKING -> Sport.HIKING
+        PredefinedExerciseType.WALKING -> Sport.WALKING
+        else -> Sport.OTHER
+    }
 
     companion object {
         private const val SAMSUNG_HEALTH = "com.sec.android.app.shealth"

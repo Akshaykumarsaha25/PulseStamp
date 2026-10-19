@@ -34,6 +34,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.instabeats.app.ui.AppState
+import com.instabeats.app.ui.SamsungGps
 import com.instabeats.app.ui.WorkoutFilter
 import com.instabeats.app.ui.bestLine
 import com.instabeats.app.ui.dayLabel
@@ -165,6 +166,7 @@ fun WorkoutsScreen(
     onShow30: () -> Unit,
     onOpen: (String) -> Unit,
     onRetry: () -> Unit,
+    onAllowSamsung: () -> Unit,
 ) {
     Column(Modifier.fillMaxSize().background(Studio.Black)) {
         ScreenHeader("Workouts")
@@ -181,6 +183,7 @@ fun WorkoutsScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.navigationBarsPadding(),
         ) {
+            if (state.samsungGps == SamsungGps.NEEDS_ACCESS) item { SamsungGpsCard(state.samsungError, onAllowSamsung) }
             when {
                 state.busy -> item {
                     ListCard {
@@ -190,6 +193,18 @@ fun WorkoutsScreen(
                     }
                 }
                 state.loading && list.isEmpty() -> item { Text("Reading your workouts…", style = body(13f, color = Studio.Mu)) }
+                list.isEmpty() && state.workouts.isNotEmpty() -> item {
+                    ListCard {
+                        val what = if (state.filter == WorkoutFilter.WITH_GPS) "with GPS" else "without GPS"
+                        Text("No workouts $what in the last ${state.rangeDays} days.", style = body(14f, FontWeight.ExtraBold))
+                        Text(
+                            "You have ${state.workouts.size} other workout${if (state.workouts.size == 1) "" else "s"}.",
+                            style = body(12f, color = Studio.Mu),
+                            modifier = Modifier.padding(top = 6.dp, bottom = 10.dp),
+                        )
+                        GhostButton("Show all", Modifier.fillMaxWidth()) { onFilter(WorkoutFilter.ALL) }
+                    }
+                }
                 list.isEmpty() -> item {
                     ListCard {
                         Text("No workouts in the last ${state.rangeDays} days.", style = body(14f, FontWeight.ExtraBold))
@@ -216,6 +231,26 @@ fun WorkoutsScreen(
                 }
             }
         }
+    }
+}
+
+/** Galaxy Watch routes stay in Samsung Health until the user lets us read them. */
+@Composable
+private fun SamsungGpsCard(error: String?, onAllow: () -> Unit) {
+    ListCard {
+        Text("Get GPS from Samsung Health", style = body(14f, FontWeight.ExtraBold))
+        Text(
+            "Your Galaxy Watch routes are kept in Samsung Health. Allow InstaBeats to read your exercise and its location.",
+            style = body(12f, color = Studio.Mu),
+            modifier = Modifier.padding(top = 6.dp),
+        )
+        error?.let { Text("Samsung Health said: $it", style = body(12f, color = Studio.Coral), modifier = Modifier.padding(top = 6.dp)) }
+        Text(
+            "Nothing happens? Turn on Developer mode first. See FAQ › Get GPS from a Samsung Galaxy Watch.",
+            style = body(12f, color = Studio.Mu),
+            modifier = Modifier.padding(top = 6.dp, bottom = 10.dp),
+        )
+        YellowButton("Allow Samsung Health", onClick = onAllow)
     }
 }
 
