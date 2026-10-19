@@ -86,7 +86,7 @@ dependencies {
 
     // Samsung Health Data SDK: reads GPS routes that Samsung Health keeps out of Health Connect.
     // Samsung's license forbids sharing the SDK, so it isn't in this repo. CI copies it from the
-    // private instabeats-sdk repo (see .github/workflows/build-apk.yml); locally, put the AAR in app/libs.
+    // private pulsestamp-sdk repo (see .github/workflows/build-apk.yml); locally, put the AAR in app/libs.
     implementation(files("libs/samsung-health-data-api-1.1.0.aar"))
     implementation("org.jetbrains.kotlin:kotlin-parcelize-runtime:1.9.24")
     // The Samsung SDK uses Gson internally but does not bring it along

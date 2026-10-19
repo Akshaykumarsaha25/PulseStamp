@@ -5,5 +5,5 @@ local.properties
 .idea/
 *.iml
 
-# Samsung Health Data SDK: never commit it (license); CI copies it from the private instabeats-sdk repo
+# Samsung Health Data SDK: never commit it (license); CI copies it from the private pulsestamp-sdk repo
 app/libs/*.aar

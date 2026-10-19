@@ -33,7 +33,7 @@ jobs:
       - name: Fetch Samsung Health Data SDK
         uses: actions/checkout@v5
         with:
-          repository: Akshaykumarsaha25/instabeats-sdk
+          repository: Akshaykumarsaha25/pulsestamp-sdk
           token: ${{ secrets.SDK_REPO_TOKEN }}
           path: samsung-sdk
           persist-credentials: false

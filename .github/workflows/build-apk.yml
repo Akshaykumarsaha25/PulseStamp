@@ -40,14 +40,14 @@ jobs:
           SDK_REPO_TOKEN: ${{ secrets.SDK_REPO_TOKEN }}
         run: |
           if [ -z "$SDK_REPO_TOKEN" ]; then
-            echo "::error::Add the SDK_REPO_TOKEN repository secret (read access to Akshaykumarsaha25/instabeats-sdk) to build with the Samsung Health Data SDK."
+            echo "::error::Add the SDK_REPO_TOKEN repository secret (read access to Akshaykumarsaha25/pulsestamp-sdk) to build with the Samsung Health Data SDK."
             exit 1
           fi
 
       - name: Fetch Samsung Health Data SDK
         uses: actions/checkout@v5
         with:
-          repository: Akshaykumarsaha25/instabeats-sdk
+          repository: Akshaykumarsaha25/pulsestamp-sdk
           token: ${{ secrets.SDK_REPO_TOKEN }}
           path: samsung-sdk
           # Don't leave the token in samsung-sdk/.git/config for later steps
