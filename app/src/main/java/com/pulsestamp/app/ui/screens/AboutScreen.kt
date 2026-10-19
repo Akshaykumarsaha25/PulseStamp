@@ -52,7 +52,7 @@ import com.pulsestamp.app.ui.theme.Studio
 import com.pulsestamp.app.ui.theme.body
 import com.pulsestamp.app.ui.theme.display
 
-const val GITHUB_URL = "https://github.com/akshaykumarsaha25-maker/InstaBeats"
+const val GITHUB_URL = "https://github.com/akshaykumarsaha25-maker/PulseStamp"
 
 private val STORY_START = listOf(
     "Every ride, my watch knew exactly how hard my heart was pounding and exactly where I was. My Insta360 footage showed none of it.",
@@ -135,7 +135,7 @@ fun AboutScreen(onPrivacy: () -> Unit, bottomSpace: androidx.compose.ui.unit.Dp)
                 Image(rememberVectorPainter(InstaIcons.GitHub), null, Modifier.size(22.dp))
                 Column(Modifier.weight(1f)) {
                     Text("Source code on GitHub", style = body(13f, FontWeight.ExtraBold))
-                    Text("github.com/akshaykumarsaha25-maker/InstaBeats", style = body(11f, color = Studio.Mu))
+                    Text("github.com/akshaykumarsaha25-maker/PulseStamp", style = body(11f, color = Studio.Mu))
                 }
             }
 

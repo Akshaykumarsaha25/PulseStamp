@@ -58,7 +58,7 @@ private fun Context.launch(intent: Intent?) {
 /** Opens in the browser: PulseStamp itself has no internet access. */
 private fun privacyPolicyIntent() = Intent(Intent.ACTION_VIEW, android.net.Uri.parse(PRIVACY_POLICY_URL))
 
-private const val PRIVACY_POLICY_URL = "https://akshaykumarsaha25-maker.github.io/InstaBeats/privacy-policy.html"
+private const val PRIVACY_POLICY_URL = "https://akshaykumarsaha25-maker.github.io/PulseStamp/privacy-policy.html"
 
 private tailrec fun Context.findActivity(): Activity? = when (this) {
     is Activity -> this
