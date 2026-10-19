@@ -1,8 +1,10 @@
 package com.instabeats.app.ui
 
 import android.Manifest
+import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.Context
+import android.content.ContextWrapper
 import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -51,6 +53,12 @@ private fun Context.launch(intent: Intent?) {
     } catch (e: ActivityNotFoundException) {
         // Nothing to open it with
     }
+}
+
+private tailrec fun Context.findActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
 }
 
 /** Top-level flow: Health Connect checks → Welcome → main tabs, detail, guide, privacy. */
@@ -102,6 +110,10 @@ private fun MainNav(vm: AppViewModel, state: AppState, reduceMotion: Boolean) {
         when (val step = state.export) {
             is ExportStep.NeedsConsent -> routeConsent.launch(step.workoutId)
             is ExportStep.NeedsStoragePermission -> storagePermission.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+            is ExportStep.NeedsSamsungAccess -> {
+                val granted = context.findActivity()?.let { vm.samsung.requestAccess(it) } ?: false
+                vm.onSamsungAccess(step.workoutId, granted)
+            }
             else -> Unit
         }
     }

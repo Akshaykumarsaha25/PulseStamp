@@ -6,6 +6,11 @@ on:
   pull_request:
   workflow_dispatch:
 
+# Least privilege: the job only reads code. Secrets are never given to pull requests from forks
+# (this uses pull_request, not pull_request_target), so outside PRs can't reach the SDK token.
+permissions:
+  contents: read
+
 jobs:
   build-android-apk:
     runs-on: ubuntu-24.04
@@ -29,6 +34,31 @@ jobs:
       - name: 5. Set up Gradle (wrapper 8.11.1)
         uses: gradle/actions/setup-gradle@v3
 
+      # Samsung's license forbids sharing the SDK, so it lives in a private repo, read with a token
+      - name: Check the SDK token is set
+        env:
+          SDK_REPO_TOKEN: ${{ secrets.SDK_REPO_TOKEN }}
+        run: |
+          if [ -z "$SDK_REPO_TOKEN" ]; then
+            echo "::error::Add the SDK_REPO_TOKEN repository secret (read access to akshaykumarsaha25-maker/instabeats-sdk) to build with the Samsung Health Data SDK."
+            exit 1
+          fi
+
+      - name: Fetch Samsung Health Data SDK
+        uses: actions/checkout@v5
+        with:
+          repository: akshaykumarsaha25-maker/instabeats-sdk
+          token: ${{ secrets.SDK_REPO_TOKEN }}
+          path: samsung-sdk
+          # Don't leave the token in samsung-sdk/.git/config for later steps
+          persist-credentials: false
+
+      - name: Put the SDK in app/libs
+        run: |
+          mkdir -p app/libs
+          cp "$(find samsung-sdk -name 'samsung-health-data-api-*.aar' | head -n 1)" app/libs/samsung-health-data-api-1.1.0.aar
+          rm -rf samsung-sdk
+
       - name: 6. Run unit tests and build Debug APK
         run: ./gradlew testDebugUnitTest assembleDebug --no-daemon --stacktrace
 
@@ -44,3 +74,5 @@ jobs:
         with:
           name: InstaBeats-APK
           path: app/build/outputs/apk/debug/app-debug.apk
+          # The repo is public, so keep test builds around only briefly
+          retention-days: 7

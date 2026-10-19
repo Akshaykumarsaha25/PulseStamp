@@ -116,8 +116,15 @@ fun AboutScreen(onPrivacy: () -> Unit, bottomSpace: androidx.compose.ui.unit.Dp)
                 HorizontalDivider(color = Studio.Hairline)
                 Credit("Built with help from", "Claude by Anthropic")
                 HorizontalDivider(color = Studio.Hairline)
+                Credit("Galaxy Watch GPS", "Samsung Health Data SDK")
+                HorizontalDivider(color = Studio.Hairline)
                 Credit("Version", version)
             }
+
+            Text(
+                "Samsung and Samsung Health are trademarks of Samsung Electronics Co., Ltd. InstaBeats is an independent app, not made or endorsed by Samsung.",
+                style = body(11f, color = Studio.Mu),
+            )
 
             Row(
                 Modifier.fillMaxWidth().background(Color(0x80141416), RoundedCornerShape(16.dp)).padding(horizontal = 14.dp, vertical = 12.dp),

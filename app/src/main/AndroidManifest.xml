@@ -17,6 +17,9 @@
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="28" />
 
+    <!-- Samsung Health Data SDK asks for Android 10+; SamsungRoutes checks the version before use -->
+    <uses-sdk tools:overrideLibrary="com.samsung.android.sdk.health.data" />
+
     <queries>
         <package android:name="com.google.android.apps.healthdata" />
         <package android:name="com.sec.android.app.shealth" />

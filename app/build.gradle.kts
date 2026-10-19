@@ -62,5 +62,11 @@ dependencies {
     // Frosted glass: real blur on Android 12+, tinted fallback below
     implementation("dev.chrisbanes.haze:haze:0.7.3")
 
+    // Samsung Health Data SDK: reads GPS routes that Samsung Health keeps out of Health Connect.
+    // Samsung's license forbids sharing the SDK, so it isn't in this repo. CI copies it from the
+    // private instabeats-sdk repo (see .github/workflows/build-apk.yml); locally, put the AAR in app/libs.
+    implementation(files("libs/samsung-health-data-api-1.1.0.aar"))
+    implementation("org.jetbrains.kotlin:kotlin-parcelize-runtime:1.9.24")
+
     testImplementation("junit:junit:4.13.2")
 }
