@@ -60,7 +60,7 @@ private val FAQS = listOf(
         "Get GPS from a Samsung Galaxy Watch",
         listOf(
             "Open Samsung Health and tap ⋮ › Settings › About Samsung Health.",
-            "Tap the version line quickly 10 times or more, then pick \"Developer mode\" and agree to the notice.",
+            "Tap the version line quickly 10 times or more, then tap \"Developer mode (Samsung Health Data SDK)\" and agree to the notice. Not the one that says \"SDK for Android\".",
             "Turn on \"Developer Mode for Data Read\".",
             "Back in InstaBeats, export your ride. When Samsung Health asks, allow Exercise and Exercise location.",
         ),
