@@ -1,5 +1,6 @@
 package com.instabeats.app.ui
 
+import android.app.Activity
 import android.app.Application
 import android.os.RemoteException
 import androidx.health.connect.client.records.ExerciseRoute
@@ -18,7 +19,8 @@ import com.instabeats.app.model.HrSample
 import com.instabeats.app.model.LapBars
 import com.instabeats.app.model.RouteState
 import com.instabeats.app.model.Sport
-import com.instabeats.app.model.bestOverlap
+import com.instabeats.app.model.fromSamsung
+import com.instabeats.app.model.mergeSamsung
 import com.instabeats.app.model.TrackPoint
 import com.instabeats.app.model.WorkoutSummary
 import com.instabeats.app.model.lapBars
@@ -27,11 +29,17 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.Instant
 import java.time.ZoneId
+import java.time.temporal.ChronoUnit
 
 enum class Access { CHECKING, MISSING, NEEDS_UPDATE, NO_ACCESS, DENIED, READY }
 
-enum class WorkoutFilter(val label: String) { ALL("All"), WITH_GPS("With GPS"), HR_ONLY("HR only") }
+/** Whether rides from Samsung Health can show their GPS. */
+enum class SamsungGps { UNAVAILABLE, NEEDS_ACCESS, READY }
+
+/** With GPS comes first and is the default: those are the rides that make an Insta360 map. */
+enum class WorkoutFilter(val label: String) { WITH_GPS("With GPS"), ALL("All"), HR_ONLY("HR only") }
 
 /** Raw HR for one workout, loaded only for the Home card and the detail screen. */
 data class WorkoutDetail(val workout: WorkoutSummary, val samples: List<HrSample>, val bars: LapBars)
@@ -59,7 +67,7 @@ data class AppState(
     val loading: Boolean = false,
     val busy: Boolean = false,
     val rangeDays: Int = 14,
-    val filter: WorkoutFilter = WorkoutFilter.ALL,
+    val filter: WorkoutFilter = WorkoutFilter.WITH_GPS,
     val workouts: List<WorkoutSummary> = emptyList(),
     val latest: WorkoutDetail? = null,
     val detail: WorkoutDetail? = null,
@@ -67,6 +75,8 @@ data class AppState(
     val exports: List<ExportedFile> = emptyList(),
     val marks: Map<String, String> = emptyMap(),
     val insta360Installed: Boolean = false,
+    val samsungGps: SamsungGps = SamsungGps.UNAVAILABLE,
+    val samsungError: String? = null,
 ) {
     val visibleWorkouts: List<WorkoutSummary>
         get() = workouts.filter {
@@ -137,7 +147,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             _state.update { it.copy(loading = true, busy = false) }
             try {
-                val list = withSamsungRoutes(health.workouts(_state.value.rangeDays))
+                val days = _state.value.rangeDays
+                val list = withSamsung(health.workouts(days), days)
                 _state.update { it.copy(workouts = list, loading = false) }
                 val newest = list.firstOrNull()
                 _state.update { it.copy(latest = newest?.let { w -> loadDetail(w) }) }
@@ -151,16 +162,31 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    /** Samsung Health keeps routes out of Health Connect; mark the rides it has a route for. */
-    private suspend fun withSamsungRoutes(list: List<WorkoutSummary>): List<WorkoutSummary> {
-        if (list.none { it.routeState == RouteState.NO_ROUTE } || !samsung.hasAccess()) return list
-        val windows = samsung.routedSessions(list.minOf { it.start }, list.maxOf { it.end })
-        return list.map { w ->
-            if (w.routeState == RouteState.NO_ROUTE && bestOverlap(w.start, w.end, windows) != null) {
-                w.copy(routeState = RouteState.HAS_ROUTE)
-            } else {
-                w
-            }
+    /**
+     * Samsung Health keeps routes out of Health Connect and sometimes stops syncing to it, so ask
+     * Samsung Health too: its rides get GPS, and rides Health Connect is missing are added.
+     */
+    private suspend fun withSamsung(list: List<WorkoutSummary>, days: Int): List<WorkoutSummary> {
+        val gps = when {
+            !samsung.available -> SamsungGps.UNAVAILABLE
+            samsung.hasAccess() -> SamsungGps.READY
+            else -> SamsungGps.NEEDS_ACCESS
+        }
+        if (gps != SamsungGps.READY) {
+            _state.update { it.copy(samsungGps = gps, samsungError = samsung.lastError) }
+            return list
+        }
+        val now = Instant.now()
+        val sessions = samsung.workouts(now.minus(days.toLong(), ChronoUnit.DAYS), now)
+        _state.update { it.copy(samsungGps = gps, samsungError = samsung.lastError) }
+        return mergeSamsung(list, sessions)
+    }
+
+    /** Shows Samsung Health's permission screen, then reloads so its routes and rides appear. */
+    fun allowSamsung(activity: Activity) {
+        viewModelScope.launch {
+            samsung.requestAccess(activity)
+            loadWorkouts()
         }
     }
 
@@ -177,7 +203,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private suspend fun loadDetail(w: WorkoutSummary): WorkoutDetail {
-        val samples = health.heartRate(w.start, w.end)
+        val samples = heartRate(w)
         return WorkoutDetail(w, samples, lapBars(w.start, w.end, w.laps, samples))
     }
 
@@ -190,10 +216,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             return
         }
         viewModelScope.launch {
-            val route = if (w.routeState == RouteState.HAS_ROUTE) runCatching { health.routeIfReadable(id) }.getOrNull() else null
+            val route = if (w.routeState == RouteState.HAS_ROUTE && !w.fromSamsung) runCatching { health.routeIfReadable(id) }.getOrNull() else null
             when {
                 route != null || !mayHaveSamsungRoute(w) -> continueExport(id, route)
-                samsung.hasAccess() -> continueExport(id, samsung.route(w.start, w.end))
+                samsung.hasAccess() -> continueWithSamsungRoute(id, w)
                 else -> _state.update { it.copy(export = ExportStep.NeedsSamsungAccess(id)) }
             }
         }
@@ -206,13 +232,29 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun onSamsungAccess(id: String, granted: Boolean) {
         val w = _state.value.workouts.firstOrNull { it.id == id } ?: return
         if (!granted) {
-            _state.update { it.copy(export = ExportStep.AskWithoutGps(id, samsung.lastError)) }
+            _state.update { it.copy(export = ExportStep.AskWithoutGps(id, samsung.lastError?.let { e -> "Samsung Health said: $e" })) }
             return
         }
         viewModelScope.launch {
-            continueExport(id, samsung.route(w.start, w.end))
+            continueWithSamsungRoute(id, w)
             loadWorkouts()
         }
+    }
+
+    /** No route found → say why and ask, rather than quietly saving a file without GPS. */
+    private suspend fun continueWithSamsungRoute(id: String, w: WorkoutSummary) {
+        val route = samsung.route(w.start, w.end)
+        if (route != null) {
+            continueExport(id, route)
+        } else {
+            _state.update { it.copy(export = ExportStep.AskWithoutGps(id, samsung.routeProblem)) }
+        }
+    }
+
+    /** Health Connect's heart rate, or what the watch logged in Samsung Health when it has none. */
+    private suspend fun heartRate(w: WorkoutSummary): List<HrSample> {
+        val samples = if (w.fromSamsung) emptyList() else health.heartRate(w.start, w.end)
+        return samples.ifEmpty { if (samsung.available) samsung.heartRate(w.start, w.end) else samples }
     }
 
     /** Result of the per-workout route consent. Refused → ask before exporting without GPS. */
@@ -253,7 +295,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         _state.update { it.copy(export = ExportStep.Working(0)) }
         viewModelScope.launch {
             try {
-                val samples = health.heartRate(w.start, w.end)
+                val samples = heartRate(w)
                 if (samples.isEmpty()) {
                     _state.update { it.copy(export = ExportStep.Failed("No heart rate recorded for this workout.", id)) }
                     return@launch

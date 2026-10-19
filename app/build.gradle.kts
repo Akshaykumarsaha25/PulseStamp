@@ -67,6 +67,8 @@ dependencies {
     // private instabeats-sdk repo (see .github/workflows/build-apk.yml); locally, put the AAR in app/libs.
     implementation(files("libs/samsung-health-data-api-1.1.0.aar"))
     implementation("org.jetbrains.kotlin:kotlin-parcelize-runtime:1.9.24")
+    // The Samsung SDK uses Gson internally but does not bring it along
+    implementation("com.google.code.gson:gson:2.10.1")
 
     testImplementation("junit:junit:4.13.2")
 }
