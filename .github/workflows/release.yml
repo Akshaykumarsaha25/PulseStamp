@@ -45,7 +45,7 @@ jobs:
 
       - name: Build unsigned bundle (pull requests)
         if: github.event_name != 'workflow_dispatch'
-        run: ./gradlew bundleRelease --no-daemon --stacktrace
+        run: ./gradlew bundleRelease assembleRelease --no-daemon --stacktrace
 
       - name: Build signed bundle (manual run)
         if: github.event_name == 'workflow_dispatch'
@@ -63,12 +63,15 @@ jobs:
           fi
           export UPLOAD_KEYSTORE_FILE="$RUNNER_TEMP/upload.jks"
           echo "$UPLOAD_KEYSTORE_BASE64" | base64 -d > "$UPLOAD_KEYSTORE_FILE"
-          ./gradlew bundleRelease --no-daemon --stacktrace
+          ./gradlew bundleRelease assembleRelease --no-daemon --stacktrace
           rm -f "$UPLOAD_KEYSTORE_FILE"
 
       - name: Upload the bundle
         uses: actions/upload-artifact@v4
         with:
-          name: InstaBeats-${{ github.event_name == 'workflow_dispatch' && 'signed' || 'unsigned' }}-bundle
-          path: app/build/outputs/bundle/release/*.aab
+          name: InstaBeats-${{ github.event_name == 'workflow_dispatch' && 'signed' || 'unsigned' }}-release
+          # AAB for Play; APK for Galaxy Store and GitHub Releases
+          path: |
+            app/build/outputs/bundle/release/*.aab
+            app/build/outputs/apk/release/*.apk
           retention-days: 7
