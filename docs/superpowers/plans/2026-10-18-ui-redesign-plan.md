@@ -1,4 +1,4 @@
-# InstaBeats UI redesign: implementation plan
+# PulseStamp UI redesign: implementation plan
 
 Spec: `docs/superpowers/specs/2026-10-18-ui-redesign-design.md`. Visual reference: the approved clickable preview (built from `welcome-privacy-2.html`, `home-a-v7.html`, `flow.html`), including About as the fourth tab.
 

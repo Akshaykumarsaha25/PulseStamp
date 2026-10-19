@@ -1,18 +1,18 @@
-# InstaBeats UI redesign: design spec
+# PulseStamp UI redesign: design spec
 
 Status: all four sections approved. Section 4's unit tests are implemented (pure Kotlin parts in `model/`, `gpx/`, `export/FileNames.kt`).
 
 ## Goal
 
-Redesign InstaBeats into a polished, Gen Z, Insta360-style app (AI action hero slideshow, frosted glass, Studio palette) with a full flow (Welcome → Home / Workouts / Exports → Workout detail → Export → Insta360 guide), a hard on-device privacy guarantee (no internet permission), and a restructured, unit-tested codebase, shipped through the existing GitHub Actions APK build. The GPX it writes must stay accurate (real HR, real GPS where there is one) and keep loading in Insta360 (Dashboard → Data source → Local files).
+Redesign PulseStamp into a polished, Gen Z, Insta360-style app (AI action hero slideshow, frosted glass, Studio palette) with a full flow (Welcome → Home / Workouts / Exports → Workout detail → Export → Insta360 guide), a hard on-device privacy guarantee (no internet permission), and a restructured, unit-tested codebase, shipped through the existing GitHub Actions APK build. The GPX it writes must stay accurate (real HR, real GPS where there is one) and keep loading in Insta360 (Dashboard → Data source → Local files).
 
 ## Approved decisions
 
 - **Visual direction "Studio":** true black, yellow `#FFC93C` for actions only, coral `#FF6B5E` for heart rate only, Unbounded 900 wordmark, Manrope body, frosted glass panels (blur on Android 12+, tinted fallback on 9 to 11).
 - **Home layout A:** full-bleed hero, stacked "Insta / Beats" wordmark, tagline "Stamp your beats on every frame.", glass card with the latest workout (BPM pulsing at the real rate, lap bars with the best lap in yellow, "Export for Insta360"), glass tab bar.
 - **Hero slideshow:** fade only (about 4 s hold, 2.2 s crossfade, one continuous gentle drift/zoom per photo, no blur filters, no progress bars).
-- **Privacy on Welcome:** "Your heart rate stays on your phone." No INTERNET permission (`tools:node="remove"`), no account, cloud, sync or analytics, `allowBackup="false"`, files only in `Downloads/InstaBeats`.
-- **Screen flow:** Welcome (first run) → Health Connect permission → Home. Tabs Home / Workouts (filters All, With GPS, HR only; 7, 14, 30 days) / Exports (share, delete, How to use, Privacy) / About. Workout detail → export (route consent if needed) → "Export done" sheet (Open Insta360 / Share / How to load it) → Insta360 guide. File names `InstaBeats_<Sport>_<yyyy-MM-dd>.gpx`. HR zones shaded relative to the workout's peak.
+- **Privacy on Welcome:** "Your heart rate stays on your phone." No INTERNET permission (`tools:node="remove"`), no account, cloud, sync or analytics, `allowBackup="false"`, files only in `Downloads/PulseStamp`.
+- **Screen flow:** Welcome (first run) → Health Connect permission → Home. Tabs Home / Workouts (filters All, With GPS, HR only; 7, 14, 30 days) / Exports (share, delete, How to use, Privacy) / About. Workout detail → export (route consent if needed) → "Export done" sheet (Open Insta360 / Share / How to load it) → Insta360 guide. File names `PulseStamp_<Sport>_<yyyy-MM-dd>.gpx`. HR zones shaded relative to the workout's peak.
 
 ### Hero images
 
@@ -39,7 +39,7 @@ Fourth tab in the glass tab bar, same Studio look: the founder story, then credi
 - Headline (Unbounded): "My heart was racing. My video didn't show it."
 - Story (Manrope), with "No thanks. I wanted full control over what I post." in bold, signed "— Akshay Kumar Saha".
 - Credits: "Made by Akshay Kumar Saha", "Built with help from Claude by Anthropic", app version from the installed package's `versionName`.
-- "View on GitHub" (yellow action) opens https://github.com/akshaykumarsaha25-maker/InstaBeats in the browser with an `ACTION_VIEW` intent. The app itself still has no INTERNET permission; if no browser is installed, the button shows "No browser found" instead of crashing.
+- "View on GitHub" (yellow action) opens https://github.com/Akshaykumarsaha25/PulseStamp in the browser with an `ACTION_VIEW` intent. The app itself still has no INTERNET permission; if no browser is installed, the button shows "No browser found" instead of crashing.
 
 ### FAQ tab (requested 2026-10-18)
 
@@ -48,7 +48,7 @@ A tab between Exports and About. At the top, a sync check shows the newest worko
 ## 1. Structure (approved)
 
 ```
-app/src/main/java/com/instabeats/app/
+app/src/main/java/com/pulsestamp/app/
 ├── MainActivity.kt            setContent + NavHost only
 ├── model/Models.kt            WorkoutSummary, HrSample, TrackPoint, Lap, ExportedFile
 ├── health/HealthRepository.kt availability, permissions, sessions, HR, routes, laps
@@ -75,7 +75,7 @@ app/src/main/java/com/instabeats/app/
   2. HR samples read with paging, flattened and sorted by time.
   3. Merge in one two-pointer pass that gives each track point the nearest-in-time HR sample. Same output as today, but O(n + m) instead of O(n × m).
   4. `GpxBuilder` keeps Garmin TrackPointExtension v1 and strict `yyyy-MM-dd'T'HH:mm:ss'Z'` UTC times. `<type>` is set from the real sport (today it is always "cycling").
-  5. Save as `InstaBeats_<Sport>_<yyyy-MM-dd>.gpx`, with a `_HHmm` suffix on collision, then show the Export-done sheet.
+  5. Save as `PulseStamp_<Sport>_<yyyy-MM-dd>.gpx`, with a `_HHmm` suffix on collision, then show the Export-done sheet.
 - **Exported marks.** The Exports tab lists the app's own files from MediaStore. Workout → file links live in app-private SharedPreferences (backup is off); deleting a file clears its mark.
 - **State.** One `AppViewModel` exposing Health Connect status (missing / no access / ready), the workout list, the open workout detail, and export status (idle / working / done / error). Screens read state and send intents back.
 
@@ -83,7 +83,7 @@ app/src/main/java/com/instabeats/app/
 
 Rules: every error says what happened and what to do; it is shown in place (card, sheet or screen), not as a toast; the app never exports made-up data.
 
-- **Health Connect.** Missing or outdated → "Install/Update Health Connect" (Play Store). Unsupported device → explanation, no button. Permission cancelled → "InstaBeats needs workout and heart-rate access to work" + "Open Health Connect settings". Access revoked mid-use → back to Welcome, no crash. Rate-limited → "Health Connect is busy. Try again in a minute." + Retry.
+- **Health Connect.** Missing or outdated → "Install/Update Health Connect" (Play Store). Unsupported device → explanation, no button. Permission cancelled → "PulseStamp needs workout and heart-rate access to work" + "Open Health Connect settings". Access revoked mid-use → back to Welcome, no crash. Rate-limited → "Health Connect is busy. Try again in a minute." + Retry.
 - **Export fixes compared with today.**
   - No HR samples → export blocked (today it writes a fake 85 bpm via `?: 85L`).
   - The synthetic route covers the whole workout (today it stops at 4 h / 14,400 points).
