@@ -197,8 +197,13 @@ fun WorkoutsScreen(
                     ListCard {
                         val what = if (state.filter == WorkoutFilter.WITH_GPS) "with GPS" else "without GPS"
                         Text("No workouts $what in the last ${state.rangeDays} days.", style = body(14f, FontWeight.ExtraBold))
+                        val others = "You have ${state.workouts.size} other workout${if (state.workouts.size == 1) "" else "s"}."
                         Text(
-                            "You have ${state.workouts.size} other workout${if (state.workouts.size == 1) "" else "s"}.",
+                            if (state.filter == WorkoutFilter.WITH_GPS) {
+                                "$others For GPS, start an outdoor Bike, Mountain biking, Run, Walk or Hike workout on your watch."
+                            } else {
+                                others
+                            },
                             style = body(12f, color = Studio.Mu),
                             modifier = Modifier.padding(top = 6.dp, bottom = 10.dp),
                         )

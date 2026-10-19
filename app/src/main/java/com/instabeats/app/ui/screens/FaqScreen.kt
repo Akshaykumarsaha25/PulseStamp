@@ -69,6 +69,23 @@ private val FAQS = listOf(
         "This only lets InstaBeats read your workouts and routes on this phone. InstaBeats has no internet access, so nothing is ever sent anywhere automatically. A file only leaves your phone if you choose to share it.",
     ),
     Faq(
+        "Record a ride with GPS",
+        listOf(
+            "Before you start, pick an outdoor workout on your watch: Bike, Mountain biking, Running, Walking or Hiking.",
+            "Indoor types like Bike indoor, Treadmill and Other workout don't record GPS, so they export heart rate only.",
+            "Wait for the watch to find GPS before you tap Start. Ride outdoors for a few minutes.",
+            "Afterwards, the ride shows under With GPS in InstaBeats.",
+        ),
+    ),
+    Faq(
+        "My video starts later than the workout",
+        listOf(
+            "That's fine. The file covers your whole workout, from start to stop.",
+            "Insta360 matches the clip by its time, so a video started 2 or 20 minutes in lines up with the right part of the ride.",
+            "Start the workout before you film and stop it after, and keep the camera's clock right.",
+        ),
+    ),
+    Faq(
         "Insta360 doesn't show my heart rate",
         listOf(
             "In the Insta360 app, open your clip and tap Dashboard › Data source › Local files. Pick your InstaBeats file.",

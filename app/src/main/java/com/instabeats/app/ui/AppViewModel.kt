@@ -38,7 +38,8 @@ enum class Access { CHECKING, MISSING, NEEDS_UPDATE, NO_ACCESS, DENIED, READY }
 /** Whether rides from Samsung Health can show their GPS. */
 enum class SamsungGps { UNAVAILABLE, NEEDS_ACCESS, READY }
 
-enum class WorkoutFilter(val label: String) { ALL("All"), WITH_GPS("With GPS"), HR_ONLY("HR only") }
+/** With GPS comes first and is the default: those are the rides that make an Insta360 map. */
+enum class WorkoutFilter(val label: String) { WITH_GPS("With GPS"), ALL("All"), HR_ONLY("HR only") }
 
 /** Raw HR for one workout, loaded only for the Home card and the detail screen. */
 data class WorkoutDetail(val workout: WorkoutSummary, val samples: List<HrSample>, val bars: LapBars)
@@ -66,7 +67,7 @@ data class AppState(
     val loading: Boolean = false,
     val busy: Boolean = false,
     val rangeDays: Int = 14,
-    val filter: WorkoutFilter = WorkoutFilter.ALL,
+    val filter: WorkoutFilter = WorkoutFilter.WITH_GPS,
     val workouts: List<WorkoutSummary> = emptyList(),
     val latest: WorkoutDetail? = null,
     val detail: WorkoutDetail? = null,
