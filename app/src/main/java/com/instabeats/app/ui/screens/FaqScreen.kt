@@ -57,6 +57,16 @@ private val FAQS = listOf(
         ),
     ),
     Faq(
+        "Get GPS from a Samsung Galaxy Watch",
+        listOf(
+            "Open Samsung Health and tap ⋮ › Settings › About Samsung Health.",
+            "Tap the version line quickly 10 times or more, then pick \"Developer mode\" and agree to the notice.",
+            "Turn on \"Developer Mode for Data Read\".",
+            "Back in InstaBeats, export your ride. When Samsung Health asks, allow Exercise and Exercise location.",
+        ),
+        "This only lets InstaBeats read your workouts and routes on this phone. InstaBeats has no internet access, so nothing is ever sent anywhere automatically. A file only leaves your phone if you choose to share it.",
+    ),
+    Faq(
         "Insta360 doesn't show my heart rate",
         listOf(
             "In the Insta360 app, open your clip and tap Dashboard › Data source › Local files. Pick your InstaBeats file.",
