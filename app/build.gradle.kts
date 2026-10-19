@@ -25,7 +25,7 @@ android {
             keyAlias = "androiddebugkey"
             keyPassword = "android"
         }
-        // Play upload key: never in the repo. The release workflow writes it from encrypted
+        // Release signing key (permanent: Galaxy Store, GitHub, later Play): never in the repo. The release workflow writes it from encrypted
         // secrets to a temp file for one build; without them the release build is unsigned.
         System.getenv("UPLOAD_KEYSTORE_FILE")?.let { path ->
             create("upload") {

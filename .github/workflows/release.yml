@@ -1,8 +1,9 @@
-name: Build Play Store bundle
+name: Build release (APK + AAB)
 
 # Pull requests build an unsigned release bundle, so R8 shrinking is checked before merging.
-# Only a manual run (Actions › Build Play Store bundle › Run workflow) signs it with the upload
-# key, so pull request code never touches the signing secrets.
+# Only a manual run (Actions › Build release › Run workflow) signs it with the upload
+# key, so pull request code never touches the signing secrets. The APK is for Galaxy Store and
+# GitHub Releases, the AAB for Google Play.
 on:
   pull_request:
   workflow_dispatch:
