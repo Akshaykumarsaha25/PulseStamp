@@ -51,7 +51,8 @@ private val FAQS = listOf(
         "A workout shows but has no GPS",
         listOf(
             "Check the workout was recorded with GPS on the watch or phone.",
-            "When InstaBeats asks to read the route, tap Allow. If you refused it, export again and allow it this time.",
+            "Samsung Health doesn't share routes with Health Connect, so InstaBeats reads them from Samsung Health directly. When it asks, allow Exercise and Exercise location.",
+            "For other watches, when InstaBeats asks to read the route, tap Allow. If you refused it, export again and allow it this time.",
             "If there's no route, you can still export heart rate only. Insta360 gets a still track with your heart rate.",
         ),
     ),

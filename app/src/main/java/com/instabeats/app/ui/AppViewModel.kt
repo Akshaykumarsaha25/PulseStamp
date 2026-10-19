@@ -12,10 +12,13 @@ import com.instabeats.app.gpx.GpxBuilder
 import com.instabeats.app.gpx.syntheticRoute
 import com.instabeats.app.health.HealthAvailability
 import com.instabeats.app.health.HealthRepository
+import com.instabeats.app.health.SamsungRoutes
 import com.instabeats.app.model.ExportedFile
 import com.instabeats.app.model.HrSample
 import com.instabeats.app.model.LapBars
 import com.instabeats.app.model.RouteState
+import com.instabeats.app.model.Sport
+import com.instabeats.app.model.bestOverlap
 import com.instabeats.app.model.TrackPoint
 import com.instabeats.app.model.WorkoutSummary
 import com.instabeats.app.model.lapBars
@@ -36,7 +39,8 @@ data class WorkoutDetail(val workout: WorkoutSummary, val samples: List<HrSample
 sealed interface ExportStep {
     data object Idle : ExportStep
     data class NeedsConsent(val workoutId: String) : ExportStep
-    data class AskWithoutGps(val workoutId: String) : ExportStep
+    data class NeedsSamsungAccess(val workoutId: String) : ExportStep
+    data class AskWithoutGps(val workoutId: String, val reason: String? = null) : ExportStep
     data class NeedsStoragePermission(val workoutId: String, val route: List<TrackPoint>?) : ExportStep
     data class Working(val hrSamples: Int) : ExportStep
     data class Done(
@@ -77,6 +81,7 @@ data class AppState(
 class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     val health = HealthRepository(app)
+    val samsung = SamsungRoutes(app)
     val store = ExportStore(app)
     private val marks = ExportMarks(app)
     private val prefs = app.getSharedPreferences("app", 0)
@@ -132,7 +137,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             _state.update { it.copy(loading = true, busy = false) }
             try {
-                val list = health.workouts(_state.value.rangeDays)
+                val list = withSamsungRoutes(health.workouts(_state.value.rangeDays))
                 _state.update { it.copy(workouts = list, loading = false) }
                 val newest = list.firstOrNull()
                 _state.update { it.copy(latest = newest?.let { w -> loadDetail(w) }) }
@@ -142,6 +147,19 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 _state.update { it.copy(busy = true, loading = false) }
             } catch (e: Exception) {
                 _state.update { it.copy(busy = true, loading = false) }
+            }
+        }
+    }
+
+    /** Samsung Health keeps routes out of Health Connect; mark the rides it has a route for. */
+    private suspend fun withSamsungRoutes(list: List<WorkoutSummary>): List<WorkoutSummary> {
+        if (list.none { it.routeState == RouteState.NO_ROUTE } || !samsung.hasAccess()) return list
+        val windows = samsung.routedSessions(list.minOf { it.start }, list.maxOf { it.end })
+        return list.map { w ->
+            if (w.routeState == RouteState.NO_ROUTE && bestOverlap(w.start, w.end, windows) != null) {
+                w.copy(routeState = RouteState.HAS_ROUTE)
+            } else {
+                w
             }
         }
     }
@@ -173,7 +191,27 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
         viewModelScope.launch {
             val route = if (w.routeState == RouteState.HAS_ROUTE) runCatching { health.routeIfReadable(id) }.getOrNull() else null
-            continueExport(id, route)
+            when {
+                route != null || !mayHaveSamsungRoute(w) -> continueExport(id, route)
+                samsung.hasAccess() -> continueExport(id, samsung.route(w.start, w.end))
+                else -> _state.update { it.copy(export = ExportStep.NeedsSamsungAccess(id)) }
+            }
+        }
+    }
+
+    private fun mayHaveSamsungRoute(w: WorkoutSummary) =
+        samsung.available && w.sport != Sport.INDOOR_CYCLING && w.sport != Sport.TREADMILL
+
+    /** Result of Samsung Health's permission screen. Refused or failed → ask before exporting without GPS. */
+    fun onSamsungAccess(id: String, granted: Boolean) {
+        val w = _state.value.workouts.firstOrNull { it.id == id } ?: return
+        if (!granted) {
+            _state.update { it.copy(export = ExportStep.AskWithoutGps(id, samsung.lastError)) }
+            return
+        }
+        viewModelScope.launch {
+            continueExport(id, samsung.route(w.start, w.end))
+            loadWorkouts()
         }
     }
 
