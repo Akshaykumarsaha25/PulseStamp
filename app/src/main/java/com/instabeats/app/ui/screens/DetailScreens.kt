@@ -273,7 +273,7 @@ private fun GuideStep(n: Int, text: androidx.compose.ui.text.AnnotatedString) {
 }
 
 @Composable
-fun PrivacyScreen(onBack: () -> Unit) {
+fun PrivacyScreen(onBack: () -> Unit, onOpenPolicy: () -> Unit) {
     Column(
         Modifier.fillMaxSize().background(Studio.Black).statusBarsPadding().navigationBarsPadding().padding(horizontal = 20.dp)
             .verticalScroll(rememberScrollState()),
@@ -287,6 +287,8 @@ fun PrivacyScreen(onBack: () -> Unit) {
                 "Android app backup is off, so app data isn't copied to Google Drive.",
             style = body(13f, color = Studio.Mu),
         )
+        Spacer(Modifier.height(16.dp))
+        GhostButton("Read the full privacy policy", Modifier.fillMaxWidth(), onOpenPolicy)
         Spacer(Modifier.height(24.dp))
     }
 }

@@ -55,6 +55,11 @@ private fun Context.launch(intent: Intent?) {
     }
 }
 
+/** Opens in the browser: InstaBeats itself has no internet access. */
+private fun privacyPolicyIntent() = Intent(Intent.ACTION_VIEW, android.net.Uri.parse(PRIVACY_POLICY_URL))
+
+private const val PRIVACY_POLICY_URL = "https://akshaykumarsaha25-maker.github.io/InstaBeats/privacy-policy.html"
+
 private tailrec fun Context.findActivity(): Activity? = when (this) {
     is Activity -> this
     is ContextWrapper -> baseContext.findActivity()
@@ -73,7 +78,7 @@ fun InstaBeatsApp(vm: AppViewModel, reduceMotion: Boolean, startOnPrivacy: Boole
 
     // Health Connect opened us to explain why we ask: show Privacy only
     if (startOnPrivacy) {
-        PrivacyScreen(onBack = onClose)
+        PrivacyScreen(onBack = onClose, onOpenPolicy = { context.launch(privacyPolicyIntent()) })
         return
     }
 
@@ -180,7 +185,7 @@ private fun MainNav(vm: AppViewModel, state: AppState, reduceMotion: Boolean) {
                 GuideScreen(state.insta360Installed, onBack = { nav.popBackStack() }, onOpenInsta360 = openInsta360)
             }
             composable("privacy") {
-                PrivacyScreen(onBack = { nav.popBackStack() })
+                PrivacyScreen(onBack = { nav.popBackStack() }, onOpenPolicy = { context.launch(privacyPolicyIntent()) })
             }
         }
         ExportOverlay(

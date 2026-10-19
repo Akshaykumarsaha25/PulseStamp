@@ -33,6 +33,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.instabeats.app.BuildConfig
 import com.instabeats.app.ui.AppState
 import com.instabeats.app.ui.SamsungGps
 import com.instabeats.app.ui.WorkoutFilter
@@ -250,11 +251,14 @@ private fun SamsungGpsCard(error: String?, onAllow: () -> Unit) {
             modifier = Modifier.padding(top = 6.dp),
         )
         error?.let { Text("Samsung Health said: $it", style = body(12f, color = Studio.Coral), modifier = Modifier.padding(top = 6.dp)) }
-        Text(
-            "Nothing happens? Turn on Developer mode first. See FAQ › Get GPS from a Samsung Galaxy Watch.",
-            style = body(12f, color = Studio.Mu),
-            modifier = Modifier.padding(top = 6.dp, bottom = 10.dp),
-        )
+        if (BuildConfig.SAMSUNG_GPS) {
+            Text(
+                "Nothing happens? Turn on Developer mode first. See FAQ › Get GPS from a Samsung Galaxy Watch.",
+                style = body(12f, color = Studio.Mu),
+                modifier = Modifier.padding(top = 6.dp),
+            )
+        }
+        Spacer(Modifier.height(10.dp))
         YellowButton("Allow Samsung Health", onClick = onAllow)
     }
 }

@@ -3,6 +3,7 @@ package com.instabeats.app.health
 import android.app.Activity
 import android.content.Context
 import android.os.Build
+import com.instabeats.app.BuildConfig
 import com.instabeats.app.model.HrSample
 import com.instabeats.app.model.SamsungSession
 import com.instabeats.app.model.Sport
@@ -44,9 +45,9 @@ class SamsungRoutes(private val context: Context) {
     var lastError: String? = null
         private set
 
-    /** The SDK needs Android 10+ and the Samsung Health app. */
+    /** The SDK needs Android 10+ and the Samsung Health app; store builds keep it off until Samsung approves. */
     val available: Boolean
-        get() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
+        get() = BuildConfig.SAMSUNG_GPS && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
             context.packageManager.getLaunchIntentForPackage(SAMSUNG_HEALTH) != null
 
     suspend fun hasAccess(): Boolean = available && guarded(false) {

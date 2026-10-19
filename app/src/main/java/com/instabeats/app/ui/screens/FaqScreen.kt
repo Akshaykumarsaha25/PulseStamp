@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.instabeats.app.BuildConfig
 import com.instabeats.app.model.fromSamsung
 import com.instabeats.app.ui.AppState
 import com.instabeats.app.ui.SamsungGps
@@ -53,12 +54,17 @@ private val FAQS = listOf(
         "A workout shows but has no GPS",
         listOf(
             "Check the workout was recorded with GPS on the watch or phone.",
-            "Samsung Health doesn't share routes with Health Connect, so InstaBeats reads them from Samsung Health directly. When it asks, allow Exercise and Exercise location.",
+            if (BuildConfig.SAMSUNG_GPS) {
+                "Samsung Health doesn't share routes with Health Connect, so InstaBeats reads them from Samsung Health directly. When it asks, allow Exercise and Exercise location."
+            } else {
+                "Samsung Health doesn't share Galaxy Watch routes with other apps yet. See GPS from a Samsung Galaxy Watch below."
+            },
             "For other watches, when InstaBeats asks to read the route, tap Allow. If you refused it, export again and allow it this time.",
             "If there's no route, you can still export heart rate only. Insta360 gets a still track with your heart rate.",
         ),
     ),
-    Faq(
+    // Samsung asks that developer mode stays with developers, so store builds don't explain it
+    if (BuildConfig.SAMSUNG_GPS) Faq(
         "Get GPS from a Samsung Galaxy Watch",
         listOf(
             "Open Samsung Health and tap ⋮ › Settings › About Samsung Health.",
@@ -67,6 +73,12 @@ private val FAQS = listOf(
             "Back in InstaBeats, open Workouts and tap Allow Samsung Health (or export a ride). Allow Exercise and Location.",
         ),
         "This only lets InstaBeats read your workouts and routes on this phone. InstaBeats has no internet access, so nothing is ever sent anywhere automatically. A file only leaves your phone if you choose to share it.",
+    ) else Faq(
+        "GPS from a Samsung Galaxy Watch",
+        listOf(
+            "Coming soon. Samsung Health keeps Galaxy Watch routes to itself for now.",
+            "Until then, Galaxy Watch rides export with your real heart rate on a fixed point. Hide the map gauge in Insta360.",
+        ),
     ),
     Faq(
         "Record a ride with GPS",
