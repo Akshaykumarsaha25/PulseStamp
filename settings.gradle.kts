@@ -13,5 +13,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "InstaBeats"
+rootProject.name = "PulseStamp"
 include(":app")

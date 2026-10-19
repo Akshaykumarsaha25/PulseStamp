@@ -1,4 +1,4 @@
-name: Build InstaBeats APK
+name: Build PulseStamp APK
 
 on:
   push:
@@ -40,14 +40,14 @@ jobs:
           SDK_REPO_TOKEN: ${{ secrets.SDK_REPO_TOKEN }}
         run: |
           if [ -z "$SDK_REPO_TOKEN" ]; then
-            echo "::error::Add the SDK_REPO_TOKEN repository secret (read access to akshaykumarsaha25-maker/instabeats-sdk) to build with the Samsung Health Data SDK."
+            echo "::error::Add the SDK_REPO_TOKEN repository secret (read access to Akshaykumarsaha25/pulsestamp-sdk) to build with the Samsung Health Data SDK."
             exit 1
           fi
 
       - name: Fetch Samsung Health Data SDK
         uses: actions/checkout@v5
         with:
-          repository: akshaykumarsaha25-maker/instabeats-sdk
+          repository: Akshaykumarsaha25/pulsestamp-sdk
           token: ${{ secrets.SDK_REPO_TOKEN }}
           path: samsung-sdk
           # Don't leave the token in samsung-sdk/.git/config for later steps
@@ -66,13 +66,13 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: InstaBeats-test-report
+          name: PulseStamp-test-report
           path: app/build/reports/tests/
 
-      - name: 7. Upload Ready-to-Install InstaBeats APK
+      - name: 7. Upload Ready-to-Install PulseStamp APK
         uses: actions/upload-artifact@v4
         with:
-          name: InstaBeats-APK
+          name: PulseStamp-APK
           path: app/build/outputs/apk/debug/app-debug.apk
           # The repo is public, so keep test builds around only briefly
           retention-days: 7

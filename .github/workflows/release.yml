@@ -1,0 +1,78 @@
+name: Build release (APK + AAB)
+
+# Pull requests build an unsigned release bundle, so R8 shrinking is checked before merging.
+# Only a manual run (Actions › Build release › Run workflow) signs it with the upload
+# key, so pull request code never touches the signing secrets. The APK is for Galaxy Store and
+# GitHub Releases, the AAB for Google Play.
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bundle:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-java@v5
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - uses: android-actions/setup-android@v4
+
+      - run: yes | sdkmanager --licenses || true
+
+      - uses: gradle/actions/setup-gradle@v3
+
+      # Samsung's license forbids sharing the SDK, so it lives in a private repo, read with a token
+      - name: Fetch Samsung Health Data SDK
+        uses: actions/checkout@v5
+        with:
+          repository: Akshaykumarsaha25/pulsestamp-sdk
+          token: ${{ secrets.SDK_REPO_TOKEN }}
+          path: samsung-sdk
+          persist-credentials: false
+
+      - name: Put the SDK in app/libs
+        run: |
+          mkdir -p app/libs
+          cp "$(find samsung-sdk -name 'samsung-health-data-api-*.aar' | head -n 1)" app/libs/samsung-health-data-api-1.1.0.aar
+          rm -rf samsung-sdk
+
+      - name: Build unsigned bundle (pull requests)
+        if: github.event_name != 'workflow_dispatch'
+        run: ./gradlew bundleRelease assembleRelease --no-daemon --stacktrace
+
+      - name: Build signed bundle (manual run)
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          UPLOAD_KEYSTORE_BASE64: ${{ secrets.UPLOAD_KEYSTORE_BASE64 }}
+          UPLOAD_KEYSTORE_PASSWORD: ${{ secrets.UPLOAD_KEYSTORE_PASSWORD }}
+          UPLOAD_KEY_ALIAS: ${{ secrets.UPLOAD_KEY_ALIAS }}
+          UPLOAD_KEY_PASSWORD: ${{ secrets.UPLOAD_KEY_PASSWORD }}
+          # Each Play upload needs a higher number than the last
+          VERSION_CODE: ${{ github.run_number }}
+        run: |
+          if [ -z "$UPLOAD_KEYSTORE_BASE64" ] || [ -z "$UPLOAD_KEYSTORE_PASSWORD" ] || [ -z "$UPLOAD_KEY_ALIAS" ] || [ -z "$UPLOAD_KEY_PASSWORD" ]; then
+            echo "::error::Add the UPLOAD_KEYSTORE_BASE64, UPLOAD_KEYSTORE_PASSWORD, UPLOAD_KEY_ALIAS and UPLOAD_KEY_PASSWORD repository secrets to sign the bundle."
+            exit 1
+          fi
+          export UPLOAD_KEYSTORE_FILE="$RUNNER_TEMP/upload.jks"
+          echo "$UPLOAD_KEYSTORE_BASE64" | base64 -d > "$UPLOAD_KEYSTORE_FILE"
+          ./gradlew bundleRelease assembleRelease --no-daemon --stacktrace
+          rm -f "$UPLOAD_KEYSTORE_FILE"
+
+      - name: Upload the bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: PulseStamp-${{ github.event_name == 'workflow_dispatch' && 'signed' || 'unsigned' }}-release
+          # AAB for Play; APK for Galaxy Store and GitHub Releases
+          path: |
+            app/build/outputs/bundle/release/*.aab
+            app/build/outputs/apk/release/*.apk
+          retention-days: 7

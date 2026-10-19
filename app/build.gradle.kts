@@ -4,15 +4,16 @@ plugins {
 }
 
 android {
-    namespace = "com.instabeats.app"
+    namespace = "com.pulsestamp.app"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.instabeats.app"
+        applicationId = "com.pulsestamp.app"
         minSdk = 28
-        targetSdk = 34
-        versionCode = 2
-        versionName = "2.0"
+        targetSdk = 36
+        // Every Play upload needs a higher number; the release workflow passes one in
+        versionCode = System.getenv("VERSION_CODE")?.toInt() ?: 3
+        versionName = "2.1"
     }
 
     // One fixed debug key for every CI build, so a new APK installs over the last one.
@@ -24,15 +25,36 @@ android {
             keyAlias = "androiddebugkey"
             keyPassword = "android"
         }
+        // Release signing key (permanent: Galaxy Store, GitHub, later Play): never in the repo. The release workflow writes it from encrypted
+        // secrets to a temp file for one build; without them the release build is unsigned.
+        System.getenv("UPLOAD_KEYSTORE_FILE")?.let { path ->
+            create("upload") {
+                storeFile = file(path)
+                storePassword = System.getenv("UPLOAD_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("UPLOAD_KEY_ALIAS")
+                keyPassword = System.getenv("UPLOAD_KEY_PASSWORD")
+            }
+        }
     }
     buildTypes {
         getByName("debug") {
             signingConfig = signingConfigs.getByName("debug")
+            // Galaxy Watch GPS via Samsung's SDK, with the developer-mode steps, for testing only
+            buildConfigField("boolean", "SAMSUNG_GPS", "true")
+        }
+        getByName("release") {
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            signingConfig = signingConfigs.findByName("upload")
+            // Off until Samsung approves the partnership: store users get heart rate only
+            buildConfigField("boolean", "SAMSUNG_GPS", "false")
         }
     }
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.14"
@@ -64,7 +86,7 @@ dependencies {
 
     // Samsung Health Data SDK: reads GPS routes that Samsung Health keeps out of Health Connect.
     // Samsung's license forbids sharing the SDK, so it isn't in this repo. CI copies it from the
-    // private instabeats-sdk repo (see .github/workflows/build-apk.yml); locally, put the AAR in app/libs.
+    // private pulsestamp-sdk repo (see .github/workflows/build-apk.yml); locally, put the AAR in app/libs.
     implementation(files("libs/samsung-health-data-api-1.1.0.aar"))
     implementation("org.jetbrains.kotlin:kotlin-parcelize-runtime:1.9.24")
     // The Samsung SDK uses Gson internally but does not bring it along
