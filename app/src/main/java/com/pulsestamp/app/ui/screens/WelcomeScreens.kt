@@ -42,11 +42,11 @@ import com.pulsestamp.app.ui.theme.display
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.haze
 
-/** The stacked "Insta / Beats" wordmark with the tagline. */
+/** The stacked "Pulse / Stamp" wordmark with the tagline. */
 @Composable
 fun Wordmark(modifier: Modifier = Modifier) {
     Column(modifier) {
-        Text("Insta\nBeats", style = display(50).copy(shadow = TextShadow))
+        Text("Pulse\nStamp", style = display(50).copy(shadow = TextShadow))
         Spacer(Modifier.height(10.dp))
         Text("Stamp your beats on every frame.", style = body(15f, FontWeight.SemiBold).copy(shadow = TextShadow))
     }
