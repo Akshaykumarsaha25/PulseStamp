@@ -3,10 +3,16 @@ name: Build release (APK + AAB)
 # Pull requests build an unsigned release bundle, so R8 shrinking is checked before merging.
 # Only a manual run (Actions › Build release › Run workflow) signs it with the upload
 # key, so pull request code never touches the signing secrets. The APK is for Galaxy Store and
-# GitHub Releases, the AAB for Google Play.
+# GitHub Releases, the AAB for Google Play. Ticking "Draft a GitHub release" also puts the
+# signed APK on a draft release, which you publish from the Releases page.
 on:
   pull_request:
   workflow_dispatch:
+    inputs:
+      draft_release:
+        description: Draft a GitHub release with the signed APK
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -67,6 +73,13 @@ jobs:
           ./gradlew bundleRelease assembleRelease --no-daemon --stacktrace
           rm -f "$UPLOAD_KEYSTORE_FILE"
 
+      # The certificate fingerprint is public; it should match the one Samsung gets
+      - name: Show the signing certificate
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          apksigner="$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -n 1)"
+          "$apksigner" verify --print-certs app/build/outputs/apk/release/*.apk | grep -i 'SHA-256'
+
       - name: Upload the bundle
         uses: actions/upload-artifact@v4
         with:
@@ -76,3 +89,39 @@ jobs:
             app/build/outputs/bundle/release/*.aab
             app/build/outputs/apk/release/*.apk
           retention-days: 7
+
+  draft-release:
+    needs: bundle
+    if: github.event_name == 'workflow_dispatch' && inputs.draft_release
+    runs-on: ubuntu-24.04
+    # Only this job can write, and it never sees the signing secrets
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: PulseStamp-signed-release
+          path: release
+
+      - name: Create the draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="$(sed -n 's/.*versionName = "\(.*\)".*/\1/p' app/build.gradle.kts)"
+          cp release/apk/release/*.apk "PulseStamp-$version.apk"
+          cat > notes.md <<'NOTES'
+          Put your real heart rate and GPS on your Insta360 videos.
+
+          Download the APK below, open it on your phone and allow "install unknown apps" when asked.
+
+          Heart rate and GPS come from Health Connect. GPS from a Samsung Galaxy Watch is coming soon.
+
+          Offline: no internet permission, no account, no tracking. Privacy policy: https://akshaykumarsaha25.github.io/PulseStamp/privacy-policy.html
+
+          Not affiliated with Insta360, Instagram, Samsung or Google.
+          NOTES
+          gh release create "v$version" "PulseStamp-$version.apk" --draft --target "$GITHUB_SHA" \
+            --title "PulseStamp $version" --notes-file notes.md
