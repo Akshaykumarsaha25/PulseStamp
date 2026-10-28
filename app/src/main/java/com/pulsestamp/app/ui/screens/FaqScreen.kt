@@ -64,7 +64,7 @@ private val FAQS = listOf(
         ),
     ),
     // Samsung asks that developer mode stays with developers, so store builds don't explain it
-    if (BuildConfig.SAMSUNG_GPS) Faq(
+    if (BuildConfig.SAMSUNG_DEV_MODE) Faq(
         "Get GPS from a Samsung Galaxy Watch",
         listOf(
             "Open Samsung Health and tap ⋮ › Settings › About Samsung Health.",
@@ -76,9 +76,11 @@ private val FAQS = listOf(
     ) else Faq(
         "GPS from a Samsung Galaxy Watch",
         listOf(
-            "Coming soon. Samsung Health keeps Galaxy Watch routes to itself for now.",
-            "Until then, Galaxy Watch rides export with your real heart rate on a fixed point. Hide the map gauge in Insta360.",
+            "Record the ride with GPS on your Galaxy Watch, then open Samsung Health so it syncs to the phone.",
+            "In PulseStamp, open Workouts and tap Allow Samsung Health (or export a ride).",
+            "Allow Exercise and Exercise location. The ride then shows under With GPS.",
         ),
+        "PulseStamp only reads your workouts and routes on this phone. It has no internet access, so nothing is sent anywhere. A file only leaves your phone if you choose to share it.",
     ),
     Faq(
         "Record a ride with GPS",

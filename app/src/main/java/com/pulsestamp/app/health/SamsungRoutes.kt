@@ -45,7 +45,7 @@ class SamsungRoutes(private val context: Context) {
     var lastError: String? = null
         private set
 
-    /** The SDK needs Android 10+ and the Samsung Health app; store builds keep it off until Samsung approves. */
+    /** The SDK needs Android 10+ and the Samsung Health app. */
     val available: Boolean
         get() = BuildConfig.SAMSUNG_GPS && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
             context.packageManager.getLaunchIntentForPackage(SAMSUNG_HEALTH) != null
