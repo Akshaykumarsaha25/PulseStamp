@@ -12,8 +12,8 @@ android {
         minSdk = 28
         targetSdk = 36
         // Every Play upload needs a higher number; the release workflow passes one in
-        versionCode = System.getenv("VERSION_CODE")?.toInt() ?: 3
-        versionName = "2.1"
+        versionCode = System.getenv("VERSION_CODE")?.toInt() ?: 4
+        versionName = "2.2"
     }
 
     // One fixed debug key for every CI build, so a new APK installs over the last one.
@@ -39,16 +39,18 @@ android {
     buildTypes {
         getByName("debug") {
             signingConfig = signingConfigs.getByName("debug")
-            // Galaxy Watch GPS via Samsung's SDK, with the developer-mode steps, for testing only
             buildConfigField("boolean", "SAMSUNG_GPS", "true")
+            // The debug key isn't registered with Samsung, so test builds still need developer mode
+            buildConfigField("boolean", "SAMSUNG_DEV_MODE", "true")
         }
         getByName("release") {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             signingConfig = signingConfigs.findByName("upload")
-            // Off until Samsung approves the partnership: store users get heart rate only
-            buildConfigField("boolean", "SAMSUNG_GPS", "false")
+            // Samsung approved the partnership for this package and release key (28 Oct 2026)
+            buildConfigField("boolean", "SAMSUNG_GPS", "true")
+            buildConfigField("boolean", "SAMSUNG_DEV_MODE", "false")
         }
     }
 

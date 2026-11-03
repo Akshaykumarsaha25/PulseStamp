@@ -251,7 +251,7 @@ private fun SamsungGpsCard(error: String?, onAllow: () -> Unit) {
             modifier = Modifier.padding(top = 6.dp),
         )
         error?.let { Text("Samsung Health said: $it", style = body(12f, color = Studio.Coral), modifier = Modifier.padding(top = 6.dp)) }
-        if (BuildConfig.SAMSUNG_GPS) {
+        if (BuildConfig.SAMSUNG_DEV_MODE) {
             Text(
                 "Nothing happens? Turn on Developer mode first. See FAQ › Get GPS from a Samsung Galaxy Watch.",
                 style = body(12f, color = Studio.Mu),
